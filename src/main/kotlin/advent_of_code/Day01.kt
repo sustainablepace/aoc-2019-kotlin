@@ -21,7 +21,7 @@ infix operator fun Fuel.compareTo(fuel: Fuel) : Int = mass - fuel.mass
 object Spaceship {
     val modules: List<Module>
     init {
-        val input = javaClass.classLoader.getResource("day01_spaceship_modules.txt")?.readText()!!
+        val input = javaClass.classLoader.getResource("day01_spaceship_modules.txt")!!.readText()
         modules = input.lines().map { line -> line.trim().toInt() }.map { mass -> Module(mass) }
     }
 }
@@ -40,10 +40,9 @@ object RocketEquationDoubleChecker : Elf() {
 
     private fun calculateFuelNeeded(fuel: Fuel) : Fuel {
         val fuelNeeded = FuelUpper.calculateFuelNeeded(fuel)
-        if(fuelNeeded > Fuel(0)) {
-            return fuelNeeded + calculateFuelNeeded(fuelNeeded)
-        }
-        return Fuel(0)
+        return if(fuelNeeded > Fuel(0)) {
+            fuelNeeded + calculateFuelNeeded(fuelNeeded)
+        } else Fuel(0)
     }
 }
 
