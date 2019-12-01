@@ -2,7 +2,7 @@ package advent_of_code
 
 import kotlin.math.floor
 
-class Day01 {
+object Day01 {
     fun partOne() : Fuel {
         return FuelUpper.calculateFuelNeeded(Spaceship)
     }
