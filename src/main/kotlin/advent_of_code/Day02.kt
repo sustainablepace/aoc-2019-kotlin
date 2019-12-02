@@ -73,9 +73,9 @@ typealias InstructionPointer = Address
 
 data class IntCode(val memory: Memory) {
 
-    fun run(): IntCode = process(next())
-        .also { i += 4 }
-        ?.run() ?: this
+    fun run(): IntCode = next().run {
+        process(this).also { i += 4 }
+    }?.run() ?: this
 
     private var i: InstructionPointer = 0
 
