@@ -1,10 +1,13 @@
 package advent_of_code
 
 object Day02 {
-    private val input: String = javaClass.classLoader.getResource("day02_gravity_assist_program.txt")!!.readText()
+    val input: String = javaClass.classLoader.getResource("day02_gravity_assist_program.txt")!!.readText()
 
-    fun partOne() : Intcode {
-        return Intcode(input).set(1, 12).set(2, 2).execute()
+    fun partOne(): IntCode {
+        val memory = Memory(input)
+        memory[1] = 12
+        memory[2] = 2
+        return IntCode(memory).execute()
     }
 }
 
@@ -14,50 +17,103 @@ enum class Opcode(val number: Int) {
     TERMINATION(99);
 
     companion object {
-        private val map = Opcode.values().associateBy(Opcode::number)
+        private val map = values().associateBy(Opcode::number)
 
         fun fromInt(number: Int) = map[number]
     }
 }
 
-data class Intcode(val input: String, val counter: Int = 0) {
+interface Instruction {
+    val opcode: Opcode
+}
 
-    private val code: MutableMap<Int, Int>
+typealias Parameter = Int
 
-    init {
-        val steps = input.split(",").map { it.toInt() }.mapIndexed { index, i -> index to i }
-        code = mutableMapOf(*steps.toTypedArray())
-    }
+class Addition(
+    val parameter1: Parameter,
+    val parameter2: Parameter,
+    val parameter3: Parameter
+) : Instruction {
+    override val opcode: Opcode = Opcode.ADDITION
+}
 
-    fun set(index: Int, value: Int) : Intcode {
-        code[index] = value
+class Multiplication(
+    val parameter1: Parameter,
+    val parameter2: Parameter,
+    val parameter3: Parameter
+) : Instruction {
+    override val opcode: Opcode = Opcode.MULTIPLICATION
+}
+
+class Termination : Instruction {
+    override val opcode: Opcode = Opcode.TERMINATION
+}
+
+typealias InstructionPointer = Int
+
+
+data class IntCode(val memory: Memory) {
+
+    private var instructionPointer: InstructionPointer = 0
+
+    fun put(address: Int, value: Int): IntCode {
+        memory[address] = value
         return this
     }
 
-    fun execute(): Intcode {
-        if(counter > code.size) {
+    private fun execute(instruction: Instruction) {
+        when (instruction) {
+            is Addition -> {
+                val sum = memory[instruction.parameter1]!! + memory[instruction.parameter2]!!
+                memory[instruction.parameter3] = sum
+                instructionPointer += 4
+            }
+            is Multiplication -> {
+                val product = memory[instruction.parameter1]!! * memory[instruction.parameter2]!!
+                memory[instruction.parameter3] = product
+                instructionPointer += 4
+            }
+            is Termination -> {
+            }
+        }
+    }
+
+    fun execute(): IntCode {
+        if (instructionPointer > memory.size) {
             return this
         }
-        val opcode = Opcode.fromInt(code[counter]!!)
-        when(opcode) {
+        when (Opcode.fromInt(memory[instructionPointer]!!)!!) {
             Opcode.ADDITION -> {
-                val index1 = code[counter+1]!!
-                val index2 = code[counter+2]!!
-                val sum = code[index1]!! + code[index2]!!
-                val index3 = code[counter+3]!!
-                code[index3] = sum
+                execute(
+                    Addition(
+                        memory[instructionPointer + 1]!!,
+                        memory[instructionPointer + 2]!!,
+                        memory[instructionPointer + 3]!!
+                    )
+                )
             }
             Opcode.MULTIPLICATION -> {
-                val index1 = code[counter+1]!!
-                val index2 = code[counter+2]!!
-                val product = code[index1]!! * code[index2]!!
-                val index3 = code[counter+3]!!
-                code[index3] = product
+                execute(
+                    Multiplication(
+                        memory[instructionPointer + 1]!!,
+                        memory[instructionPointer + 2]!!,
+                        memory[instructionPointer + 3]!!
+                    )
+                )
             }
             Opcode.TERMINATION -> {
+                execute(Termination())
                 return this
             }
         }
-        return Intcode(code.map { it.value }.joinToString(","), counter + 4).execute()
+        return this.execute()
     }
+
+}
+
+typealias Memory = MutableMap<Int, Int>
+
+fun Memory(input: String): Memory {
+    val steps = input.split(",").map { it.toInt() }.mapIndexed { index, i -> index to i }
+    return mutableMapOf(*steps.toTypedArray())
 }
