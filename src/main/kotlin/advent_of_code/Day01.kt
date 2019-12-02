@@ -3,54 +3,41 @@ package advent_of_code
 import kotlin.math.floor
 
 object Day01 {
-    fun partOne() : Fuel {
-        return FuelUpper.calculateFuelNeeded(Spaceship)
+    fun partOne(): Fuel {
+        return FuelUpper.fuelForSpaceship(Spaceship)
     }
-    fun partTwo() : Fuel {
-        return RocketEquationDoubleChecker.calculateFuelNeeded(Spaceship)
+
+    fun partTwo(): Fuel {
+        return RocketEquationDoubleChecker.fuelForSpaceship(Spaceship)
     }
 }
 
-sealed class ModuleOrFuel(open val mass: Int)
-data class Module(override val mass: Int) : ModuleOrFuel(mass)
-data class Fuel(override val mass: Int) : ModuleOrFuel(mass)
-
-infix operator fun Fuel.plus(fuel: Fuel) : Fuel = Fuel(mass + fuel.mass)
-infix operator fun Fuel.compareTo(fuel: Fuel) : Int = mass - fuel.mass
+typealias Mass = Int
+typealias Fuel = Mass
+typealias Module = Mass
 
 object Spaceship {
-    val modules: List<Module>
-    init {
-        val input = javaClass.classLoader.getResource("day01_spaceship_modules.txt")!!.readText()
-        modules = input.lines().map { line -> line.trim().toInt() }.map { mass -> Module(mass) }
+    val modules: List<Module> = javaClass.classLoader
+        .getResource("day01_spaceship_modules.txt")!!
+        .readText()
+        .lines()
+        .map { line -> line.trim().toInt() }
+}
+
+object RocketEquationDoubleChecker {
+    fun fuelForSpaceship(spaceship: Spaceship): Fuel = spaceship.modules.sumBy(this::fuelForModule)
+
+    fun fuelForModule(module: Module): Fuel = FuelUpper.fuelForMass(module).run { this + fuelForFuel(this) }
+
+    private fun fuelForFuel(fuel: Fuel): Fuel = FuelUpper.fuelForMass(fuel).run {
+        if (this > 0) {
+            this + fuelForFuel(this)
+        } else 0
     }
 }
 
-sealed class Elf
-
-object RocketEquationDoubleChecker : Elf() {
-    fun calculateFuelNeeded(spaceship: Spaceship) : Fuel = Fuel(spaceship.modules.sumBy { module ->
-        calculateFuelNeeded(module).mass
-    })
-
-    fun calculateFuelNeeded(module: Module) : Fuel {
-        val fuelNeeded = FuelUpper.calculateFuelNeeded(module)
-        return fuelNeeded + calculateFuelNeeded(fuelNeeded)
-    }
-
-    private fun calculateFuelNeeded(fuel: Fuel) : Fuel {
-        val fuelNeeded = FuelUpper.calculateFuelNeeded(fuel)
-        return if(fuelNeeded > Fuel(0)) {
-            fuelNeeded + calculateFuelNeeded(fuelNeeded)
-        } else Fuel(0)
-    }
-}
-
-object FuelUpper : Elf() {
-    fun calculateFuelNeeded(spaceship: Spaceship) : Fuel = Fuel(spaceship.modules.sumBy { module ->
-        calculateFuelNeeded(module).mass
-    })
-
-    fun calculateFuelNeeded(moduleOrFuel: ModuleOrFuel) : Fuel = Fuel(floor( moduleOrFuel.mass.toFloat().div(3)).toInt().minus(2))
+object FuelUpper {
+    fun fuelForSpaceship(spaceship: Spaceship): Fuel = spaceship.modules.sumBy(this::fuelForMass)
+    fun fuelForMass(mass: Mass): Fuel = floor(mass.toFloat().div(3)).toInt().minus(2)
 }
 

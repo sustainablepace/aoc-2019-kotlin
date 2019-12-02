@@ -9,20 +9,20 @@ import kotlin.test.assertEquals
 class Day01Test {
 
     @Test fun partOne() {
-        assertEquals(Fuel(2), FuelUpper.calculateFuelNeeded(Module(12)))
-        assertEquals(Fuel(2), FuelUpper.calculateFuelNeeded(Module(14)))
-        assertEquals(Fuel(654), FuelUpper.calculateFuelNeeded(Module(1969)))
-        assertEquals(Fuel(33583), FuelUpper.calculateFuelNeeded(Module(100756)))
+        assertEquals(2, FuelUpper.fuelForMass(12))
+        assertEquals(2, FuelUpper.fuelForMass(14))
+        assertEquals(654, FuelUpper.fuelForMass(1969))
+        assertEquals(33583, FuelUpper.fuelForMass(100756))
 
-        assertEquals(Fuel(3282386), FuelUpper.calculateFuelNeeded(Spaceship))
+        assertEquals(3282386, FuelUpper.fuelForSpaceship(Spaceship))
     }
 
     @Test fun partTwo() {
-        assertEquals(Fuel(2), RocketEquationDoubleChecker.calculateFuelNeeded(Module(14)))
-        assertEquals(Fuel(966), RocketEquationDoubleChecker.calculateFuelNeeded(Module(1969)))
-        assertEquals(Fuel(50346), RocketEquationDoubleChecker.calculateFuelNeeded(Module(100756)))
+        assertEquals(2, RocketEquationDoubleChecker.fuelForModule(14))
+        assertEquals(966, RocketEquationDoubleChecker.fuelForModule(1969))
+        assertEquals(50346, RocketEquationDoubleChecker.fuelForModule(100756))
 
-        assertEquals(Fuel(4920708), RocketEquationDoubleChecker.calculateFuelNeeded(Spaceship))
+        assertEquals(4920708, RocketEquationDoubleChecker.fuelForSpaceship(Spaceship))
     }
 
 }
