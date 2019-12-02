@@ -1,10 +1,12 @@
 package advent_of_code
 
+import advent_of_code.Opcode.*
+
 object Day02 {
     val input: String = javaClass.classLoader.getResource("day02_gravity_assist_program.txt")!!.readText()
 
     fun partOne(): IntCode {
-        val memory = Memory(input)
+        val memory = memory(input)
         memory[1] = 12
         memory[2] = 2
         return IntCode(memory).execute()
@@ -13,7 +15,7 @@ object Day02 {
     fun partTwo(): Int? {
         for(noun in 0..99)  {
             for(verb in 0..99) {
-                val memory = Memory(input)
+                val memory = memory(input)
                 memory[1] = noun
                 memory[2] = verb
                 val result = IntCode(memory).execute().memory[0]!!
@@ -45,23 +47,23 @@ interface Instruction {
 typealias Parameter = Int
 
 class Addition(
-    val parameter1: Parameter,
-    val parameter2: Parameter,
-    val parameter3: Parameter
+    val param1: Parameter,
+    val param2: Parameter,
+    val param3: Parameter
 ) : Instruction {
-    override val opcode: Opcode = Opcode.ADDITION
+    override val opcode: Opcode = ADDITION
 }
 
 class Multiplication(
-    val parameter1: Parameter,
-    val parameter2: Parameter,
-    val parameter3: Parameter
+    val param1: Parameter,
+    val param2: Parameter,
+    val param3: Parameter
 ) : Instruction {
-    override val opcode: Opcode = Opcode.MULTIPLICATION
+    override val opcode: Opcode = MULTIPLICATION
 }
 
 class Termination : Instruction {
-    override val opcode: Opcode = Opcode.TERMINATION
+    override val opcode: Opcode = TERMINATION
 }
 
 
@@ -69,20 +71,18 @@ typealias InstructionPointer = Int
 
 data class IntCode(val memory: Memory) {
 
-    private var instructionPointer: InstructionPointer = 0
+    private var i: InstructionPointer = 0
 
     private fun execute(instruction: Instruction) {
         instruction.run {
             when (this) {
                 is Addition -> {
-                    val sum = memory[parameter1]!! + memory[parameter2]!!
-                    memory[parameter3] = sum
-                    instructionPointer += 4
+                    memory[param3] = memory.fetch(param1).plus(memory.fetch(param2))
+                    i += 4
                 }
                 is Multiplication -> {
-                    val product = memory[parameter1]!! * memory[parameter2]!!
-                    memory[parameter3] = product
-                    instructionPointer += 4
+                    memory[param3] = memory.fetch(param1).times(memory.fetch(param2))
+                    i += 4
                 }
                 is Termination -> {
                 }
@@ -91,29 +91,26 @@ data class IntCode(val memory: Memory) {
     }
 
     fun execute(): IntCode {
-        if (instructionPointer > memory.size) {
-            return this
-        }
-        when (Opcode.fromInt(memory[instructionPointer]!!)) {
-            Opcode.ADDITION -> {
+        when (Opcode.fromInt(memory.fetch(i))) {
+            ADDITION -> {
                 execute(
                     Addition(
-                        memory[instructionPointer + 1]!!,
-                        memory[instructionPointer + 2]!!,
-                        memory[instructionPointer + 3]!!
+                        memory.fetch(i + 1),
+                        memory.fetch(i + 2),
+                        memory.fetch(i + 3)
                     )
                 )
             }
-            Opcode.MULTIPLICATION -> {
+            MULTIPLICATION -> {
                 execute(
                     Multiplication(
-                        memory[instructionPointer + 1]!!,
-                        memory[instructionPointer + 2]!!,
-                        memory[instructionPointer + 3]!!
+                        memory.fetch(i + 1),
+                        memory.fetch(i + 2),
+                        memory.fetch(i + 3)
                     )
                 )
             }
-            Opcode.TERMINATION -> {
+            TERMINATION -> {
                 execute(Termination())
                 return this
             }
@@ -125,7 +122,11 @@ data class IntCode(val memory: Memory) {
 
 typealias Memory = MutableMap<Int, Int>
 
-fun Memory(input: String): Memory {
-    val steps = input.split(",").map { it.toInt() }.mapIndexed { index, i -> index to i }
-    return mutableMapOf(*steps.toTypedArray())
+class InvalidMemoryException(msg: String) : RuntimeException(msg)
+
+fun Memory.fetch(address: Int) = this[address] ?: throw InvalidMemoryException("Invalid memory.")
+
+fun memory(input: String): Memory {
+    val addresses = input.split(",").map { it.toInt() }.mapIndexed { index, i -> index to i }
+    return mutableMapOf(*addresses.toTypedArray())
 }
