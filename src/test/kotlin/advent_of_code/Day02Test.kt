@@ -20,6 +20,7 @@ class Day02Test {
 
     @Test
     fun `part two`() {
+        assertEquals(6472, Day02.partTwo())
     }
 }
 

@@ -9,6 +9,21 @@ object Day02 {
         memory[2] = 2
         return IntCode(memory).execute()
     }
+
+    fun partTwo(): Int? {
+        for(noun in 0..99)  {
+            for(verb in 0..99) {
+                val memory = Memory(input)
+                memory[1] = noun
+                memory[2] = verb
+                val result = IntCode(memory).execute().memory[0]!!
+                if(result == 19690720) {
+                    return 100 * noun + verb
+                }
+            }
+        }
+        return null
+    }
 }
 
 enum class Opcode(val number: Int) {
@@ -49,31 +64,28 @@ class Termination : Instruction {
     override val opcode: Opcode = Opcode.TERMINATION
 }
 
-typealias InstructionPointer = Int
 
+typealias InstructionPointer = Int
 
 data class IntCode(val memory: Memory) {
 
     private var instructionPointer: InstructionPointer = 0
 
-    fun put(address: Int, value: Int): IntCode {
-        memory[address] = value
-        return this
-    }
-
     private fun execute(instruction: Instruction) {
-        when (instruction) {
-            is Addition -> {
-                val sum = memory[instruction.parameter1]!! + memory[instruction.parameter2]!!
-                memory[instruction.parameter3] = sum
-                instructionPointer += 4
-            }
-            is Multiplication -> {
-                val product = memory[instruction.parameter1]!! * memory[instruction.parameter2]!!
-                memory[instruction.parameter3] = product
-                instructionPointer += 4
-            }
-            is Termination -> {
+        instruction.run {
+            when (this) {
+                is Addition -> {
+                    val sum = memory[parameter1]!! + memory[parameter2]!!
+                    memory[parameter3] = sum
+                    instructionPointer += 4
+                }
+                is Multiplication -> {
+                    val product = memory[parameter1]!! * memory[parameter2]!!
+                    memory[parameter3] = product
+                    instructionPointer += 4
+                }
+                is Termination -> {
+                }
             }
         }
     }
@@ -82,7 +94,7 @@ data class IntCode(val memory: Memory) {
         if (instructionPointer > memory.size) {
             return this
         }
-        when (Opcode.fromInt(memory[instructionPointer]!!)!!) {
+        when (Opcode.fromInt(memory[instructionPointer]!!)) {
             Opcode.ADDITION -> {
                 execute(
                     Addition(
