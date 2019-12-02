@@ -3,7 +3,9 @@ package advent_of_code
 import advent_of_code.Opcode.*
 
 object Day02 {
-    val input: String = javaClass.classLoader.getResource("day02_gravity_assist_program.txt")!!.readText()
+    val input: String = javaClass.classLoader
+        .getResource("day02_gravity_assist_program.txt")!!
+        .readText()
 
     fun partOne(): IntCode {
         val memory = memory(input)
@@ -13,13 +15,12 @@ object Day02 {
     }
 
     fun partTwo(): Int? {
-        for(noun in 0..99)  {
-            for(verb in 0..99) {
+        (0..99).forEach { noun ->
+            (0..99).forEach { verb ->
                 val memory = memory(input)
                 memory[1] = noun
                 memory[2] = verb
-                val result = IntCode(memory).execute().memory[0]!!
-                if(result == 19690720) {
+                if (IntCode(memory).execute().memory[0] == 19_690_720) {
                     return 100 * noun + verb
                 }
             }
@@ -28,105 +29,78 @@ object Day02 {
     }
 }
 
-enum class Opcode(val number: Int) {
+enum class Opcode(val value: Int) {
     ADDITION(1),
     MULTIPLICATION(2),
     TERMINATION(99);
 
     companion object {
-        private val map = values().associateBy(Opcode::number)
-
-        fun fromInt(number: Int) = map[number]
+        private val map = values().associateBy(Opcode::value)
+        fun from(value: Int): Opcode = map.getOrDefault(value, TERMINATION)
     }
-}
-
-interface Instruction {
-    val opcode: Opcode
 }
 
 typealias Parameter = Int
 
-class Addition(
-    val param1: Parameter,
-    val param2: Parameter,
-    val param3: Parameter
-) : Instruction {
-    override val opcode: Opcode = ADDITION
+sealed class Instruction {
+    abstract val opcode: Opcode
 }
 
-class Multiplication(
-    val param1: Parameter,
-    val param2: Parameter,
-    val param3: Parameter
-) : Instruction {
-    override val opcode: Opcode = MULTIPLICATION
+class Addition(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
+    override val opcode = ADDITION
 }
 
-class Termination : Instruction {
-    override val opcode: Opcode = TERMINATION
+class Multiplication(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
+    override val opcode = MULTIPLICATION
 }
 
+class Termination : Instruction() {
+    override val opcode = TERMINATION
+}
 
-typealias InstructionPointer = Int
+typealias Address = Int
+typealias InstructionPointer = Address
 
 data class IntCode(val memory: Memory) {
 
+    fun execute(): IntCode = execute(next()).also { i += 4 }?.execute() ?: this
+
     private var i: InstructionPointer = 0
 
-    private fun execute(instruction: Instruction) {
-        instruction.run {
-            when (this) {
-                is Addition -> {
-                    memory[param3] = memory.fetch(param1).plus(memory.fetch(param2))
-                    i += 4
-                }
-                is Multiplication -> {
-                    memory[param3] = memory.fetch(param1).times(memory.fetch(param2))
-                    i += 4
-                }
-                is Termination -> {
-                }
+    private fun memory(address: Address) = memory[address]!!
+
+    private fun execute(instruction: Instruction) = instruction.run {
+        when (this) {
+            is Addition -> {
+                memory[p3] = memory(p1).plus(memory(p2))
+                this@IntCode
             }
+            is Multiplication -> {
+                memory[p3] = memory(p1).times(memory(p2))
+                this@IntCode
+            }
+            is Termination -> null
         }
     }
 
-    fun execute(): IntCode {
-        when (Opcode.fromInt(memory.fetch(i))) {
-            ADDITION -> {
-                execute(
-                    Addition(
-                        memory.fetch(i + 1),
-                        memory.fetch(i + 2),
-                        memory.fetch(i + 3)
-                    )
-                )
-            }
-            MULTIPLICATION -> {
-                execute(
-                    Multiplication(
-                        memory.fetch(i + 1),
-                        memory.fetch(i + 2),
-                        memory.fetch(i + 3)
-                    )
-                )
-            }
-            TERMINATION -> {
-                execute(Termination())
-                return this
-            }
-        }
-        return this.execute()
+    private fun next(): Instruction = when (Opcode.from(memory(i))) {
+        ADDITION -> Addition(
+            memory(i + 1),
+            memory(i + 2),
+            memory(i + 3)
+        )
+        MULTIPLICATION -> Multiplication(
+            memory(i + 1),
+            memory(i + 2),
+            memory(i + 3)
+        )
+        TERMINATION -> Termination()
     }
-
 }
 
 typealias Memory = MutableMap<Int, Int>
 
-class InvalidMemoryException(msg: String) : RuntimeException(msg)
-
-fun Memory.fetch(address: Int) = this[address] ?: throw InvalidMemoryException("Invalid memory.")
-
 fun memory(input: String): Memory {
-    val addresses = input.split(",").map { it.toInt() }.mapIndexed { index, i -> index to i }
+    val addresses = input.split(",").mapIndexed { index, value -> index to value.toInt() }
     return mutableMapOf(*addresses.toTypedArray())
 }
