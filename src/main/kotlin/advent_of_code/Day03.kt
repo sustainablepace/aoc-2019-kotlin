@@ -9,7 +9,7 @@ object Day03 {
 
     fun partOne(): Int = cablePair.distanceToClosestIntersection()
 
-    fun partTwo(): Int = cablePair.stepsToClosestIntersection()
+    fun partTwo(): Int? = cablePair.minStepsToIntersection()
 }
 
 enum class Direction(val input: Char) {
@@ -72,7 +72,6 @@ fun Cable.port(): Port = this[0]
 typealias CablePair = Pair<Cable, Cable>
 typealias Intersection = Point
 
-
 fun CablePair.distanceToClosestIntersection(): Int = first.port() distanceTo closestIntersection()
 
 fun CablePair.closestIntersection(): Intersection = intersections().reduce { acc, intersection ->
@@ -83,4 +82,4 @@ fun CablePair.intersections(): List<Intersection> = first.toSet().intersect(seco
 
 fun CablePair.stepsTo(intersection: Intersection): Int = toList().sumBy { cable -> cable.indexOf(intersection) }
 
-fun CablePair.stepsToClosestIntersection(): Int = intersections().map { stepsTo(it) }.min() ?: 0
+fun CablePair.minStepsToIntersection(): Int? = intersections().map { stepsTo(it) }.min()
