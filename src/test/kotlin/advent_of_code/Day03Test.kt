@@ -28,7 +28,7 @@ class Day03Test {
         val cable4 = cable("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
         assertEquals(410, cable3.stepsToClosestIntersection(cable4))
 
-        assertNotEquals(63526, Day03.cables[0].stepsToClosestIntersection(Day03.cables[1]))
+        assertEquals(63526, Day03.cables[0].stepsToClosestIntersection(Day03.cables[1]))
     }
 }
 
