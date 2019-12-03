@@ -76,9 +76,5 @@ fun Cable.intersections(cable: Cable): List<Pair<Int, Int>> = toSet().intersect(
 
 fun List<Cable>.stepsToIntersection(intersection: Pair<Int, Int>): Int = sumBy { it.indexOf(intersection) }
 
-fun Cable.stepsToClosestIntersection2(cable: Cable): Int = intersections(cable).reduce { acc, intersection ->
-    if (listOf(this, cable).stepsToIntersection(intersection) < listOf(this, cable).stepsToIntersection(intersection)) intersection else acc
-}.run { listOf(this@stepsToClosestIntersection2, cable).stepsToIntersection(this) }
-
 fun Cable.stepsToClosestIntersection(cable: Cable): Int = intersections(cable).map { listOf(this, cable).stepsToIntersection(it)}.min() ?: 0
 
