@@ -1,5 +1,6 @@
 package advent_of_code
 
+import advent_of_code.Direction.*
 import kotlin.math.abs
 
 object Day03 {
@@ -43,10 +44,10 @@ fun cable(segments: List<CableSegment>): Cable {
     val cable = mutableListOf<Point>(point)
     segments.forEach { segment ->
         val step: Point = when (segment.direction) {
-            Direction.RIGHT -> (1 to 0)
-            Direction.DOWN -> (0 to -1)
-            Direction.LEFT -> (-1 to 0)
-            Direction.UP -> (0 to 1)
+            RIGHT -> (1 to 0)
+            DOWN -> (0 to -1)
+            LEFT -> (-1 to 0)
+            UP -> (0 to 1)
         }
         repeat(segment.distance) {
             point += step
