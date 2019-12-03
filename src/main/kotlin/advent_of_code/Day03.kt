@@ -3,11 +3,9 @@ package advent_of_code
 import kotlin.math.abs
 
 object Day03 {
-    val input: String = javaClass.classLoader
+    val cables = javaClass.classLoader
         .getResource("day03_cables.txt")!!
-        .readText()
-
-    val cables = input.lines().map { cable(it) }
+        .readText().lines().map { cable(it) }
 
     fun partOne(): Int = cables[0].distanceToClosestIntersectionToPort(cables[1])
 
