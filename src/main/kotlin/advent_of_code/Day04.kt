@@ -2,15 +2,14 @@ package advent_of_code
 
 object Day04 {
 
-    private val passwordRange = (272091..815432).map { it.toString().toCharArray().toList() }
+    private val passwordRange = (272091..815432).map { it.toString() }
 
     fun partOne(): Int = passwordRange.filter { it.matchesCriteria() }.count()
 
     fun partTwo(): Int = passwordRange.filter { it.matchesAdditionalCriteria() }.count()
 }
 
-typealias Password = List<Char>
-
+typealias Password = String
 fun Password.matchesCriteria() =
     hasExactlySixDigits() && twoAdjacentDigitsAreTheSame() && digitsNeverDecrease()
 
