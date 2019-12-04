@@ -12,12 +12,12 @@ object Day04 {
 typealias Password = List<Char>
 
 fun Password.matchesCriteria() =
-    hasOnlySixDigits() && twoAdjacentDigitsAreTheSame() && digitsNeverDecrease()
+    hasExactlySixDigits() && twoAdjacentDigitsAreTheSame() && digitsNeverDecrease()
 
 fun Password.matchesAdditionalCriteria() =
-    hasOnlySixDigits() && twoAdjacentDigitsAreTheSameAndNotWithinLargerGroup() && digitsNeverDecrease()
+    hasExactlySixDigits() && twoAdjacentDigitsAreTheSameAndNotWithinLargerGroup() && digitsNeverDecrease()
 
-fun Password.hasOnlySixDigits(): Boolean = count() == 6 && all { it.isDigit() }
+fun Password.hasExactlySixDigits(): Boolean = count() == 6 && all { it.isDigit() }
 fun Password.twoAdjacentDigitsAreTheSame(): Boolean = zipWithNext().any { it.first == it.second }
 fun Password.digitsNeverDecrease(): Boolean = zipWithNext().all { it.first <= it.second }
 
