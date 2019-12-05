@@ -22,7 +22,9 @@ data class FiveDigitOpcode(val opcode: Int) {
     }
 }
 
-sealed class Instruction(vararg val p: Parameter)
+sealed class Instruction(val p: List<Parameter>)
+
+data class Parameter(val value: Int, val mode: ParameterMode)
 
 enum class ParameterMode(val mode: Int) {
     POSITION(0),
@@ -34,57 +36,59 @@ enum class ParameterMode(val mode: Int) {
     }
 }
 
-data class Parameter(val value: Int, val mode: ParameterMode)
-
-class Addition(vararg parameters: Parameter) : Instruction(*parameters) {
+class Addition(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 3
     }
 }
 
-class Multiplication(vararg parameters: Parameter) : Instruction(*parameters) {
+class Multiplication(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 3
     }
 }
 
-class Input(vararg parameters: Parameter) : Instruction(*parameters) {
+class Input(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 1
     }
 }
 
-class Output(vararg parameters: Parameter) : Instruction(*parameters) {
+class Output(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 1
     }
 }
 
-class LessThan(vararg parameters: Parameter) : Instruction(*parameters) {
+class LessThan(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 3
     }
 }
 
-class Equals(vararg parameters: Parameter) : Instruction(*parameters) {
+class Equals(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 3
     }
 }
 
-class JumpIfTrue(vararg parameters: Parameter) : Instruction(*parameters) {
+class JumpIfTrue(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 2
     }
 }
 
-class JumpIfFalse(vararg parameters: Parameter) : Instruction(*parameters) {
+class JumpIfFalse(p: List<Parameter>) : Instruction(p) {
     companion object {
         const val numParams = 2
     }
 }
 
-class Termination(vararg parameters: Parameter) : Instruction(*parameters)
+class Termination(p: List<Parameter>) : Instruction(p) {
+    companion object {
+        const val numParams = 0
+    }
+}
 
 
 typealias InstructionPointer = Address
@@ -156,25 +160,21 @@ data class IntCode(val memory: Memory) {
         }
     }
 
-    private fun parameters(num: Int, fiveDigitOpcode: FiveDigitOpcode): Array<Parameter> {
-        val list = mutableListOf<Parameter>()
-        repeat(num) {
-            list.add(Parameter(memory(i + it + 1), fiveDigitOpcode.parameterMode(it)))
-        }
-        return list.toTypedArray()
-    }
+    private fun parameters(num: Int, fiveDigitOpcode: FiveDigitOpcode): List<Parameter> =
+        generateSequence(0) { it + 1 }.take(num).map {
+            Parameter(memory(i + it + 1), fiveDigitOpcode.parameterMode(it))
+        }.toList()
+
 
     private fun next(fiveDigitOpcode: FiveDigitOpcode): Instruction = when (fiveDigitOpcode.twoDigitOpcode) {
-        1 -> Addition(*parameters(Addition.numParams, fiveDigitOpcode))
-        2 -> Multiplication(*parameters(Multiplication.numParams, fiveDigitOpcode))
-        3 -> Input(*parameters(Input.numParams, fiveDigitOpcode))
-        4 -> Output(*parameters(Output.numParams, fiveDigitOpcode))
-        5 -> JumpIfTrue(*parameters(JumpIfTrue.numParams, fiveDigitOpcode))
-        6 -> JumpIfFalse(*parameters(JumpIfFalse.numParams, fiveDigitOpcode))
-        7 -> LessThan(*parameters(LessThan.numParams, fiveDigitOpcode))
-        8 -> Equals(*parameters(Equals.numParams, fiveDigitOpcode))
-        else -> Termination()
-
+        1 -> Addition(parameters(Addition.numParams, fiveDigitOpcode))
+        2 -> Multiplication(parameters(Multiplication.numParams, fiveDigitOpcode))
+        3 -> Input(parameters(Input.numParams, fiveDigitOpcode))
+        4 -> Output(parameters(Output.numParams, fiveDigitOpcode))
+        5 -> JumpIfTrue(parameters(JumpIfTrue.numParams, fiveDigitOpcode))
+        6 -> JumpIfFalse(parameters(JumpIfFalse.numParams, fiveDigitOpcode))
+        7 -> LessThan(parameters(LessThan.numParams, fiveDigitOpcode))
+        8 -> Equals(parameters(Equals.numParams, fiveDigitOpcode))
+        else -> Termination(parameters(Termination.numParams, fiveDigitOpcode))
     }
 }
-
