@@ -2,7 +2,6 @@ package advent_of_code.domain
 
 import advent_of_code.domain.ParameterMode.IMMEDIATE
 import advent_of_code.domain.ParameterMode.POSITION
-import advent_of_code.domain.TwoDigitOpcode.*
 
 typealias Address = Int
 typealias Memory = MutableMap<Address, Int>
@@ -12,37 +11,21 @@ fun memory(input: String): Memory {
     return mutableMapOf(*values.toTypedArray())
 }
 
-
-enum class TwoDigitOpcode(val value: Int) {
-    ADDITION(1),
-    MULTIPLICATION(2),
-    INPUT(3),
-    OUTPUT(4),
-    JUMP_IF_TRUE(5),
-    JUMP_IF_FALSE(6),
-    LESS_THAN(7),
-    EQUALS(8),
-    TERMINATION(99);
-
-    companion object {
-        private val opcodes = values().associateBy(TwoDigitOpcode::value)
-        fun from(value: Int): TwoDigitOpcode = opcodes.getOrDefault(value, TERMINATION)
-    }
-}
-
 data class FiveDigitOpcode(val opcode: Int) {
     private val paddedOpcode = opcode.toString().padStart(5, '0')
 
-    val twoDigitOpcode: TwoDigitOpcode
-        get() = Companion.from(paddedOpcode.substring(4).toInt(10))
+    val twoDigitOpcode: Int
+        get() = paddedOpcode.substring(4).toInt(10)
 
     fun parameterMode(index: Int): ParameterMode {
         return if (index in (0..2)) ParameterMode.from(paddedOpcode[2 - index].toString().toInt()) else POSITION
     }
 }
 
-sealed class Instruction {
-    abstract val twoDigitOpcode: TwoDigitOpcode
+sealed class Instruction(vararg val p: Parameter) {
+    init {
+
+    }
 }
 
 enum class ParameterMode(val mode: Int) {
@@ -57,41 +40,55 @@ enum class ParameterMode(val mode: Int) {
 
 data class Parameter(val value: Int, val mode: ParameterMode)
 
-class Addition(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
-    override val twoDigitOpcode = ADDITION
+class Addition(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 3
+    }
 }
 
-class Multiplication(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
-    override val twoDigitOpcode = MULTIPLICATION
+class Multiplication(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 3
+    }
 }
 
-class Input(val p1: Parameter) : Instruction() {
-    override val twoDigitOpcode = INPUT
+class Input(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 1
+    }
 }
 
-class Output(val p1: Parameter) : Instruction() {
-    override val twoDigitOpcode = OUTPUT
+class Output(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 1
+    }
 }
 
-class LessThan(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
-    override val twoDigitOpcode = LESS_THAN
+class LessThan(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 3
+    }
 }
 
-class Equals(val p1: Parameter, val p2: Parameter, val p3: Parameter) : Instruction() {
-    override val twoDigitOpcode = EQUALS
+class Equals(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 3
+    }
 }
 
-class JumpIfTrue(val p1: Parameter, val p2: Parameter) : Instruction() {
-    override val twoDigitOpcode = JUMP_IF_TRUE
+class JumpIfTrue(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 2
+    }
 }
 
-class JumpIfFalse(val p1: Parameter, val p2: Parameter) : Instruction() {
-    override val twoDigitOpcode = JUMP_IF_FALSE
+class JumpIfFalse(vararg parameters: Parameter) : Instruction(*parameters) {
+    companion object {
+        const val numParams = 2
+    }
 }
 
-class Termination : Instruction() {
-    override val twoDigitOpcode = TERMINATION
-}
+class Termination(vararg parameters: Parameter) : Instruction(*parameters)
 
 
 typealias InstructionPointer = Address
@@ -103,7 +100,7 @@ object InputOutput {
 
 data class IntCode(val memory: Memory) {
 
-    fun run(): IntCode = next(memory).run {
+    fun run(): IntCode = next(FiveDigitOpcode(memory(i))).run {
         process(this, memory)
     }?.run() ?: this
 
@@ -111,117 +108,77 @@ data class IntCode(val memory: Memory) {
 
     private fun memory(address: Address) = memory[address]!!
 
-    private fun getValueFromParameter(memory: Memory, parameter: Parameter): Int = when (parameter.mode) {
-        POSITION -> memory(parameter.value)
-        IMMEDIATE -> parameter.value
+    private fun modalValue(parameter: Parameter): Int = parameter.run {
+        when (mode) {
+            POSITION -> memory(value)
+            IMMEDIATE -> value
+        }
     }
 
     private fun process(instruction: Instruction, memory: Memory) = instruction.run {
         when (this) {
             is Addition -> {
-                memory[p3.value] = getValueFromParameter(memory, p1) + getValueFromParameter(memory, p2)
-                i += 4
+                memory[p[2].value] = modalValue(p[0]) + modalValue(p[1])
+                i += Addition.numParams + 1
                 this@IntCode
             }
             is Multiplication -> {
-                memory[p3.value] = getValueFromParameter(memory, p1) * getValueFromParameter(memory, p2)
-                i += 4
+                memory[p[2].value] = modalValue(p[0]) * modalValue(p[1])
+                i += Multiplication.numParams + 1
                 this@IntCode
             }
             is Input -> {
                 val input = InputOutput.input()!!.toInt()
-                memory[p1.value] = input
-                i += 2
+                memory[p[0].value] = input
+                i += Input.numParams + 1
                 this@IntCode
             }
             is Output -> {
-                InputOutput.output(getValueFromParameter(memory, p1).toString())
-                i += 2
+                InputOutput.output(modalValue(p[0]).toString())
+                i += Output.numParams + 1
                 this@IntCode
             }
             is Termination -> null
             is LessThan -> {
-                memory[p3.value] = if (getValueFromParameter(memory, p1) < getValueFromParameter(memory, p2)) 1 else 0
-                i += 4
+                memory[p[2].value] = if (modalValue(p[0]) < modalValue(p[1])) 1 else 0
+                i += LessThan.numParams + 1
                 this@IntCode
             }
             is Equals -> {
-                memory[p3.value] = if (getValueFromParameter(memory, p1) == getValueFromParameter(memory, p2)) 1 else 0
-                i += 4
+                memory[p[2].value] = if (modalValue(p[0]) == modalValue(p[1])) 1 else 0
+                i += Equals.numParams + 1
                 this@IntCode
             }
             is JumpIfTrue -> {
-                i = if (getValueFromParameter(memory, p1) != 0) getValueFromParameter(memory, p2) else i+3
+                i = if (modalValue(p[0]) != 0) modalValue(p[1]) else i + JumpIfTrue.numParams + 1
                 this@IntCode
             }
             is JumpIfFalse -> {
-                i = if (getValueFromParameter(memory, p1) == 0) getValueFromParameter(memory, p2) else i+3
+                i = if (modalValue(p[0]) == 0) modalValue(p[1]) else i + JumpIfFalse.numParams + 1
                 this@IntCode
             }
         }
     }
 
-    private fun next(memory: Memory): Instruction {
-        val fiveDigitOpcode = FiveDigitOpcode(memory(i))
-        return when (fiveDigitOpcode.twoDigitOpcode) {
-            ADDITION -> Addition(
-                Parameter(memory(i + 1), fiveDigitOpcode.parameterMode(0)),
-                Parameter(memory(i + 2), fiveDigitOpcode.parameterMode(1)),
-                Parameter(memory(i + 3), fiveDigitOpcode.parameterMode(2))
-            )
-            MULTIPLICATION -> Multiplication(
-                Parameter(
-                    memory(i + 1), fiveDigitOpcode.parameterMode(0)
-                ),
-                Parameter(
-                    memory(i + 2), fiveDigitOpcode.parameterMode(1)
-                ),
-                Parameter(
-                    memory(i + 3), fiveDigitOpcode.parameterMode(2)
-                )
-            )
-            INPUT -> Input(Parameter(memory(i + 1), fiveDigitOpcode.parameterMode(0)))
-            OUTPUT -> Output(Parameter(memory(i + 1), fiveDigitOpcode.parameterMode(0)))
-            JUMP_IF_TRUE -> JumpIfTrue(
-                Parameter(
-                    memory(i + 1), fiveDigitOpcode.parameterMode(0)
-                ),
-                Parameter(
-                    memory(i + 2), fiveDigitOpcode.parameterMode(1)
-                )
-            )
-            JUMP_IF_FALSE -> JumpIfFalse(
-                Parameter(
-                    memory(i + 1), fiveDigitOpcode.parameterMode(0)
-                ),
-                Parameter(
-                    memory(i + 2), fiveDigitOpcode.parameterMode(1)
-                )
-            )
-            LESS_THAN -> LessThan(
-                Parameter(
-                    memory(i + 1), fiveDigitOpcode.parameterMode(0)
-                ),
-                Parameter(
-                    memory(i + 2), fiveDigitOpcode.parameterMode(1)
-                ),
-                Parameter(
-                    memory(i + 3), fiveDigitOpcode.parameterMode(2)
-                )
-            )
-            EQUALS -> Equals(
-                Parameter(
-                    memory(i + 1), fiveDigitOpcode.parameterMode(0)
-                ),
-                Parameter(
-                    memory(i + 2), fiveDigitOpcode.parameterMode(1)
-                ),
-                Parameter(
-                    memory(i + 3), fiveDigitOpcode.parameterMode(2)
-                )
-            )
-            TERMINATION -> Termination()
+    private fun parameters(num: Int, fiveDigitOpcode: FiveDigitOpcode): Array<Parameter> {
+        val list = mutableListOf<Parameter>()
+        repeat(num) {
+            list.add(Parameter(memory(i + it + 1), fiveDigitOpcode.parameterMode(it)))
         }
+        return list.toTypedArray()
+    }
+
+    private fun next(fiveDigitOpcode: FiveDigitOpcode): Instruction = when (fiveDigitOpcode.twoDigitOpcode) {
+        1 -> Addition(*parameters(Addition.numParams, fiveDigitOpcode))
+        2 -> Multiplication(*parameters(Multiplication.numParams, fiveDigitOpcode))
+        3 -> Input(*parameters(Input.numParams, fiveDigitOpcode))
+        4 -> Output(*parameters(Output.numParams, fiveDigitOpcode))
+        5 -> JumpIfTrue(*parameters(JumpIfTrue.numParams, fiveDigitOpcode))
+        6 -> JumpIfFalse(*parameters(JumpIfFalse.numParams, fiveDigitOpcode))
+        7 -> LessThan(*parameters(LessThan.numParams, fiveDigitOpcode))
+        8 -> Equals(*parameters(Equals.numParams, fiveDigitOpcode))
+        else -> Termination()
+
     }
 }
 
