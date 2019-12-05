@@ -22,11 +22,7 @@ data class FiveDigitOpcode(val opcode: Int) {
     }
 }
 
-sealed class Instruction(vararg val p: Parameter) {
-    init {
-
-    }
-}
+sealed class Instruction(vararg val p: Parameter)
 
 enum class ParameterMode(val mode: Int) {
     POSITION(0),
