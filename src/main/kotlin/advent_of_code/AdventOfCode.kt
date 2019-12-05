@@ -7,7 +7,9 @@ fun main(args: Array<String>) {
     //println(Day02.partTwo())
     //println(Day03.partOne())
     //println(Day03.partTwo())
-    println(Day04.partOne())
-    println(Day04.partTwo())
+    //println(Day04.partOne())
+    //println(Day04.partTwo())
+    //println(Day05.partOne())
+    println(Day05.partTwo())
 }
 

@@ -1,5 +1,7 @@
 package advent_of_code
 
+import advent_of_code.domain.IntCode
+import advent_of_code.domain.memory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
