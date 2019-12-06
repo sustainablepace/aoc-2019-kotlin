@@ -10,6 +10,8 @@ fun main(args: Array<String>) {
     //println(Day04.partOne())
     //println(Day04.partTwo())
     //println(Day05.partOne())
-    println(Day05.partTwo())
+    //println(Day05.partTwo())
+    //println(Day06.partOne())
+    println(Day06.partTwo())
 }
 
