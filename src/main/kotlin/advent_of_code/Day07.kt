@@ -16,22 +16,53 @@ object Day07 {
         .getResource("day07_thrusters.txt")!!
         .readText()
 
-    fun partOne(): Signal = intArrayOf(0, 1, 2, 3, 4).permutations().bestOutput(amplifierControllerSoftware)
+    fun partOne(): Signal = intArrayOf(0, 1, 2, 3, 4).permutations().bestSequentialOutput(amplifierControllerSoftware)
 
-    suspend fun partTwo(): Signal = intArrayOf(5, 6, 7, 8, 9).permutations().map { calculateOutput(amplifierControllerSoftware, it.toList()) }.max() ?: 0
+    suspend fun partTwo(): Signal = intArrayOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
 }
 
 typealias Signal = Int
 typealias PhaseSetting = Int
 typealias PhaseSettingSequence = IntArray
 
-fun PhaseSettingSequence.amplify(inputSignal: Signal, program: String): Signal {
+fun PhaseSettingSequence.sequentialAmplify(inputSignal: Signal, program: String): Signal {
     var previousOutputSignal = inputSignal
     forEach { phaseSetting ->
         val amplifier = Amplifier(program, phaseSetting)
         previousOutputSignal = amplifier.amplify(previousOutputSignal)
     }
     return previousOutputSignal
+}
+
+suspend fun PhaseSettingSequence.parallelAmplify(program: String) : Signal {
+    var last: Int? = null
+    coroutineScope {
+        val broadcastChannel = BroadcastChannel<Int>(2)
+        val ea = broadcastChannel.openSubscription()
+        broadcastChannel.send(this@parallelAmplify[0]) // Initial phase
+        broadcastChannel.send(0) // Primary input
+
+        val (ab, bc, cd, de) = (1..4).map { i ->
+            Channel<Int>(1).also { it.send(this@parallelAmplify[i]) }
+        }
+        val output = broadcastChannel.openSubscription()
+
+        launch {
+            try {
+                while (true) {
+                    last = output.receive()
+                }
+            } catch (e: ClosedReceiveChannelException) {
+                // Calculation done
+            }
+        }
+        launchComputer(program, ea, ab)
+        launchComputer(program, ab, bc)
+        launchComputer(program, bc, cd)
+        launchComputer(program, cd, de)
+        launchComputer(program, de, broadcastChannel)
+    }
+    return last!!
 }
 
 fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
@@ -58,7 +89,8 @@ fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
     return permutations
 }
 
-fun List<PhaseSettingSequence>.bestOutput(program: String): Int = map { it.amplify(0, program) }.max() ?: 0
+fun List<PhaseSettingSequence>.bestSequentialOutput(program: String): Int = map { it.sequentialAmplify(0, program) }.max() ?: 0
+suspend fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Int = map { it.parallelAmplify(program) }.max() ?: 0
 
 
 data class Amplifier(val program: String, val phaseSetting: PhaseSetting) {
@@ -85,35 +117,3 @@ class AmplifierIo(private val inputs: List<Int>) : Io {
     }
 }
 
-
-
-suspend fun calculateOutput(program: String, phases: List<Int>): Int {
-    var last: Int? = null
-    coroutineScope {
-        val broadcastChannel = BroadcastChannel<Int>(2)
-        val ea = broadcastChannel.openSubscription()
-        broadcastChannel.send(phases[0]) // Initial phase
-        broadcastChannel.send(0) // Primary input
-
-        val (ab, bc, cd, de) = (1..4).map { i ->
-            Channel<Int>(1).also { it.send(phases[i]) }
-        }
-        val output = broadcastChannel.openSubscription()
-
-        launch {
-            try {
-                while (true) {
-                    last = output.receive()
-                }
-            } catch (e: ClosedReceiveChannelException) {
-                // Calculation done
-            }
-        }
-        launchComputer(program, ea, ab)
-        launchComputer(program, ab, bc)
-        launchComputer(program, bc, cd)
-        launchComputer(program, cd, de)
-        launchComputer(program, de, broadcastChannel)
-    }
-    return last!!
-}
