@@ -93,24 +93,29 @@ class Termination(p: List<Parameter>) : Instruction(p) {
 
 typealias InstructionPointer = Address
 
-object InputOutput {
-    fun input(): String? = readLine()
-    fun output(line: String) = println(line)
+interface Io {
+    fun input(): String?
+    fun output(line: String)
+    fun outputs() : List<String>
 }
 
-data class IntCode(val memory: Memory) {
+object InputOutput : Io {
+    override fun input(): String? = readLine()
+    override fun output(line: String) = println(line)
+    override fun outputs() = listOf("")
+}
 
-    fun run(): IntCode = next(FiveDigitOpcode(memory(i))).run {
+data class IntCode(val memory: Memory, val io: Io = InputOutput) {
+
+    fun run(): IntCode = next(FiveDigitOpcode(memory[i]!!)).run {
         process(this, memory)
     }?.run() ?: this
 
     private var i: InstructionPointer = 0
 
-    private fun memory(address: Address) = memory[address]!!
-
     private fun modalValue(parameter: Parameter): Int = parameter.run {
         when (mode) {
-            POSITION -> memory(value)
+            POSITION -> memory[value]!!
             IMMEDIATE -> value
         }
     }
@@ -128,13 +133,13 @@ data class IntCode(val memory: Memory) {
                 this@IntCode
             }
             is Input -> {
-                val input = InputOutput.input()!!.toInt()
+                val input = io.input()!!.toInt()
                 memory[p[0].value] = input
                 i += Input.numParams + 1
                 this@IntCode
             }
             is Output -> {
-                InputOutput.output(modalValue(p[0]).toString())
+                io.output(modalValue(p[0]).toString())
                 i += Output.numParams + 1
                 this@IntCode
             }
@@ -161,8 +166,8 @@ data class IntCode(val memory: Memory) {
     }
 
     private fun parameters(num: Int, fiveDigitOpcode: FiveDigitOpcode): List<Parameter> =
-        generateSequence(0) { it + 1 }.take(num).map {
-            Parameter(memory(i + it + 1), fiveDigitOpcode.parameterMode(it))
+        generateSequence(0) { it + 1 }.take(num).map {index ->
+            Parameter(memory[index + i + 1]!!, fiveDigitOpcode.parameterMode(index))
         }.toList()
 
 

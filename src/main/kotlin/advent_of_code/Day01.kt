@@ -38,6 +38,6 @@ object RocketEquationDoubleChecker {
 
 object FuelUpper {
     fun fuelForSpaceship(spaceship: Spaceship): Fuel = spaceship.modules.sumBy(this::fuelForMass)
-    fun fuelForMass(mass: Mass): Fuel = floor(mass.toFloat().div(3)).toInt().minus(2)
+    fun fuelForMass(mass: Mass): Fuel = mass / 3 - 2
 }
 
