@@ -2,7 +2,13 @@ package advent_of_code
 
 import advent_of_code.domain.IntCode
 import advent_of_code.domain.Io
+import advent_of_code.domain.launchComputer
 import advent_of_code.domain.memory
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 object Day07 {
 
@@ -12,7 +18,7 @@ object Day07 {
 
     fun partOne(): Signal = intArrayOf(0, 1, 2, 3, 4).permutations().bestOutput(amplifierControllerSoftware)
 
-    fun partTwo(): Signal = intArrayOf(5, 6, 7, 8, 9).permutations().bestOutput(amplifierControllerSoftware)
+    suspend fun partTwo(): Signal = intArrayOf(5, 6, 7, 8, 9).permutations().map { calculateOutput(amplifierControllerSoftware, it.toList()) }.max() ?: 0
 }
 
 typealias Signal = Int
@@ -77,4 +83,37 @@ class AmplifierIo(private val inputs: List<Int>) : Io {
     override fun outputs(): List<String> {
         return outputs.map { it.toString() }.toList()
     }
+}
+
+
+
+suspend fun calculateOutput(program: String, phases: List<Int>): Int {
+    var last: Int? = null
+    coroutineScope {
+        val broadcastChannel = BroadcastChannel<Int>(2)
+        val ea = broadcastChannel.openSubscription()
+        broadcastChannel.send(phases[0]) // Initial phase
+        broadcastChannel.send(0) // Primary input
+
+        val (ab, bc, cd, de) = (1..4).map { i ->
+            Channel<Int>(1).also { it.send(phases[i]) }
+        }
+        val output = broadcastChannel.openSubscription()
+
+        launch {
+            try {
+                while (true) {
+                    last = output.receive()
+                }
+            } catch (e: ClosedReceiveChannelException) {
+                // Calculation done
+            }
+        }
+        launchComputer(program, ea, ab)
+        launchComputer(program, ab, bc)
+        launchComputer(program, bc, cd)
+        launchComputer(program, cd, de)
+        launchComputer(program, de, broadcastChannel)
+    }
+    return last!!
 }

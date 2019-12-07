@@ -2,6 +2,7 @@ package advent_of_code
 
 import advent_of_code.domain.IntCode
 import advent_of_code.domain.memory
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -34,5 +35,8 @@ class Day07Test {
 
     @Test
     fun `part two`() {
+        runBlocking {
+            assertEquals(4374895, Day07.partTwo())
+        }
     }
 }

@@ -1,6 +1,6 @@
 package advent_of_code
 
-fun main(args: Array<String>) {
+suspend fun main(args: Array<String>) {
     //println(Day01.partOne())
     //println(Day01.partTwo())
     //println(Day02.partOne())
@@ -14,5 +14,6 @@ fun main(args: Array<String>) {
     //println(Day06.partOne())
     //println(Day06.partTwo())
     println(Day07.partOne())
+    println(Day07.partTwo())
 }
 
