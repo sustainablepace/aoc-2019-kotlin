@@ -1,5 +1,11 @@
 package advent_of_code
 
+
+fun main(args: Array<String>) {
+    println(Day04.partOne())
+    println(Day04.partTwo())
+}
+
 object Day04 {
 
     private val passwordRange = (272091..815432).map { it.toString() }

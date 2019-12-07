@@ -1,14 +1,19 @@
 package advent_of_code
 
-import advent_of_code.domain.IntCode
+import advent_of_code.domain.Program
 import advent_of_code.domain.Io
 import advent_of_code.domain.launchComputer
-import advent_of_code.domain.memory
+import advent_of_code.domain.load
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+
+suspend fun main(args: Array<String>) {
+    println(Day07.partOne())
+    println(Day07.partTwo())
+}
 
 object Day07 {
 
@@ -95,8 +100,8 @@ suspend fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Int 
 
 data class Amplifier(val program: String, val phaseSetting: PhaseSetting) {
     fun amplify(inputSignal: Signal): Signal {
-        val amplifier = IntCode(memory(program), AmplifierIo(listOf(phaseSetting, inputSignal)))
-        amplifier.run()
+        val amplifier = Program(program.load(), AmplifierIo(listOf(phaseSetting, inputSignal)))
+        amplifier.compute()
         return amplifier.io.outputs().first().toInt()
     }
 }

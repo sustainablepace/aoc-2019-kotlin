@@ -1,6 +1,10 @@
 package advent_of_code
 
-import kotlin.math.floor
+
+fun main(args: Array<String>) {
+    println(Day01.partOne())
+    println(Day01.partTwo())
+}
 
 object Day01 {
     fun partOne(): Fuel {

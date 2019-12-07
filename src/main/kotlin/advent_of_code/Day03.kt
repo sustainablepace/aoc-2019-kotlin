@@ -3,6 +3,11 @@ package advent_of_code
 import advent_of_code.Direction.*
 import kotlin.math.abs
 
+fun main(args: Array<String>) {
+    println(Day03.partOne())
+    println(Day03.partTwo())
+}
+
 object Day03 {
     val cablePair = javaClass.classLoader
         .getResource("day03_cables.txt")!!

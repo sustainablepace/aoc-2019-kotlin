@@ -1,5 +1,10 @@
 package advent_of_code
 
+fun main(args: Array<String>) {
+    println(Day06.partOne())
+    println(Day06.partTwo())
+}
+
 object Day06 {
 
     val input = javaClass.classLoader
