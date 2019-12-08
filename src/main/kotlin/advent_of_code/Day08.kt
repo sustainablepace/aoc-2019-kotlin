@@ -4,7 +4,7 @@ import advent_of_code.Pixel.*
 
 fun main(args: Array<String>) {
     println(Day08.partOne())
-    println(Day08.partTwo())
+    println(Day08.partTwo().humanReadable())
 }
 
 object Day08 {
@@ -21,8 +21,15 @@ object Day08 {
         return numOnes!! * numTwos!!
     }
 
-    fun partTwo(): String = image.visibleLayer.joinToString("")
+    fun partTwo(): DecodedImage = image.decodedImage
 }
+
+typealias DecodedImage = String
+
+fun DecodedImage.humanReadable() = (1..Day08.image.dimensions.second).map { line ->
+    val startIndex = Day08.image.dimensions.first * (line - 1)
+    substring(startIndex, startIndex + Day08.image.dimensions.first)
+}.joinToString("\n").replace('1', '#').replace('0', ' ')
 
 data class Image(val rawData: RawData, val dimensions: Dimensions) {
     val layers
@@ -30,12 +37,15 @@ data class Image(val rawData: RawData, val dimensions: Dimensions) {
             index / (dimensions.first * dimensions.second) to c
         }.groupBy { it.first }.values.map { it.map { it.second.toString().toInt() } }
 
-    val visibleLayer
+    private val visibleLayer
         get() = (0 until dimensions.size()).map { index ->
             layers.map { layer ->
                 layer[index]
             }.visiblePixel()
         }
+
+    val decodedImage: DecodedImage
+        get() = visibleLayer.joinToString("")
 }
 
 typealias PixelLayer = List<Int>
