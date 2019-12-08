@@ -1,5 +1,7 @@
 package advent_of_code.domain
 
+import java.io.IOException
+
 typealias Address = Int
 typealias Memory = MutableMap<Address, Int>
 typealias Code = String
@@ -113,7 +115,7 @@ class Output(fiveDigitOpcode: FiveDigitOpcode) : Instruction(fiveDigitOpcode) {
     override val numParams = 1
     override fun execute(memory: Memory, instructionPointer: InstructionPointer, io: Io): InstructionPointer {
         val p = parameters(memory, instructionPointer)
-        io.output(memory.read(p[0]).toString())
+        io.output(memory.read(p[0]))
         return instructionPointer + numParams + 1
     }
 }
@@ -163,25 +165,59 @@ class Termination(fiveDigitOpcode: FiveDigitOpcode) : Instruction(fiveDigitOpcod
 typealias InstructionPointer = Address
 
 interface Io {
-    fun input(): String?
-    fun output(line: String)
-    fun outputs(): List<String>
+    fun queueInput(line: Int): Io
+    fun input(): Int?
+    fun output(line: Int)
+    fun outputQueue(): List<Int>
 }
 
 object CommandLineIo : Io {
-    override fun input(): String? = readLine()
-    override fun output(line: String) = println(line)
-    override fun outputs() = listOf("")
+    override fun queueInput(line: Int) = this
+    override fun input(): Int? = readLine()?.toInt()
+    override fun output(line: Int) = println(line)
+    override fun outputQueue() = listOf<Int>()
 }
 
-data class Program(val memory: Memory, val io: Io = CommandLineIo) {
+open class QueuedIo: Io {
+    private val inputQueue = mutableListOf<Int>()
+    private val outputQueue = mutableListOf<Int>()
+    override fun queueInput(line: Int) : Io {
+        inputQueue.add(line)
+        return this
+    }
+
+    override fun input(): Int? {
+        if(inputQueue.size > 0) {
+            return inputQueue.removeAt(0)
+        } else throw IOException("Insufficient input.")
+    }
+
+    override fun output(line: Int) {
+        outputQueue.add(line)
+    }
+
+    override fun outputQueue(): List<Int> {
+        return outputQueue
+    }
+
+}
+
+data class Program(val memory: Memory, val io: Io = CommandLineIo, val name: String? = null) {
 
     private var instructionPointer: InstructionPointer = 0
 
+    fun isTerminated() : Boolean = memory.read(instructionPointer).toInstruction() is Termination
+
     fun compute(): Program = memory.read(instructionPointer).toInstruction().let { instruction ->
-        if (instruction is Termination) null else {
-            instructionPointer = instruction.execute(memory, instructionPointer, io)
-            this
+        if (instruction is Termination) {
+            null
+        } else {
+            try {
+                instructionPointer = instruction.execute(memory, instructionPointer, io)
+                this
+            } catch (e:IOException) {
+                null
+            }
         }
     }?.compute() ?: this
 

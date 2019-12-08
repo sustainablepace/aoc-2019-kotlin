@@ -1,9 +1,6 @@
 package advent_of_code
 
-import advent_of_code.domain.Program
-import advent_of_code.domain.Io
-import advent_of_code.domain.launchComputer
-import advent_of_code.domain.load
+import advent_of_code.domain.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -23,32 +20,59 @@ object Day07 {
 
     fun partOne(): Signal = intArrayOf(0, 1, 2, 3, 4).permutations().bestSequentialOutput(amplifierControllerSoftware)
 
-    suspend fun partTwo(): Signal = intArrayOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
+    suspend fun partTwo(): Signal =
+        intArrayOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
 }
 
 typealias Signal = Int
 typealias PhaseSetting = Int
 typealias PhaseSettingSequence = IntArray
 
-fun PhaseSettingSequence.sequentialAmplify(inputSignal: Signal, program: String): Signal {
+fun PhaseSettingSequence.sequentialAmplify(inputSignal: Signal, code: Code): Signal {
     var previousOutputSignal = inputSignal
     forEach { phaseSetting ->
-        val amplifier = Amplifier(program, phaseSetting)
-        previousOutputSignal = amplifier.amplify(previousOutputSignal)
+        val io = QueuedIo().queueInput(phaseSetting) as QueuedIo
+        val amplifier = Amplifier(code, io)
+        previousOutputSignal = amplifier.amplify(previousOutputSignal)!!
     }
     return previousOutputSignal
 }
 
-suspend fun PhaseSettingSequence.parallelAmplify(program: String) : Signal {
+typealias AmplifierCluster = List<Amplifier>
+
+fun AmplifierCluster.isRunning(): Boolean = any { !it.isTerminated() }
+
+fun PhaseSettingSequence.parallelAmplify(inputSignal: Signal, code: Code): Signal {
+    val ioList: List<SubscriptionIo> = this.map { phaseSetting ->
+        SubscriptionIo().queueInput(phaseSetting) as SubscriptionIo
+    }
+    val pairs = ioList.toMutableList().also { it.add(ioList.first()) }.zipWithNext()
+    pairs.forEach { pair ->
+        pair.first.addSubscriber(pair.second)
+    }
+    ioList.first().queueInput(inputSignal)
+
+    val cluster = listOf("A", "B", "C", "D", "E").zip(ioList).toMap().map {
+        Amplifier(code, it.value, it.key)
+    }
+    while (cluster.isRunning()) {
+        cluster.forEach { amplifier ->
+            amplifier.amplify()
+        }
+    }
+    return cluster.last().program.io.outputQueue().last()
+}
+
+suspend fun PhaseSettingSequence.parallelAmplifyCoRoutine(inputSignal: Signal, program: String): Signal {
     var last: Int? = null
     coroutineScope {
         val broadcastChannel = BroadcastChannel<Int>(2)
         val ea = broadcastChannel.openSubscription()
-        broadcastChannel.send(this@parallelAmplify[0]) // Initial phase
-        broadcastChannel.send(0) // Primary input
+        broadcastChannel.send(this@parallelAmplifyCoRoutine[0]) // Initial phase
+        broadcastChannel.send(inputSignal) // Primary input
 
         val (ab, bc, cd, de) = (1..4).map { i ->
-            Channel<Int>(1).also { it.send(this@parallelAmplify[i]) }
+            Channel<Int>(1).also { it.send(this@parallelAmplifyCoRoutine[i]) }
         }
         val output = broadcastChannel.openSubscription()
 
@@ -94,31 +118,40 @@ fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
     return permutations
 }
 
-fun List<PhaseSettingSequence>.bestSequentialOutput(program: String): Int = map { it.sequentialAmplify(0, program) }.max() ?: 0
-suspend fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Int = map { it.parallelAmplify(program) }.max() ?: 0
+fun List<PhaseSettingSequence>.bestSequentialOutput(program: String): Int =
+    map { it.sequentialAmplify(0, program) }.max() ?: 0
+
+fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Int =
+    map { it.parallelAmplify(0, program) }.max() ?: 0
 
 
-data class Amplifier(val program: String, val phaseSetting: PhaseSetting) {
-    fun amplify(inputSignal: Signal): Signal {
-        val amplifier = Program(program.load(), AmplifierIo(listOf(phaseSetting, inputSignal)))
-        amplifier.compute()
-        return amplifier.io.outputs().first().toInt()
+data class Amplifier(val code: Code, val io: QueuedIo, val name: String? = null) {
+    val program = Program(code.load(), io, name)
+
+    fun isTerminated(): Boolean = program.isTerminated()
+
+    fun amplify(inputSignal: Signal? = null): Signal? {
+        if (inputSignal != null) {
+            io.queueInput(inputSignal)
+        }
+        program.compute()
+        return program.io.outputQueue().run {
+            if (isNotEmpty()) first() else null
+        }
     }
 }
 
-class AmplifierIo(private val inputs: List<Int>) : Io {
-    private var inputIndex = 0
-    var outputs = mutableListOf<Int>()
-    override fun input(): String? {
-        return inputs[inputIndex++].toString()
+class SubscriptionIo() : QueuedIo() {
+    var subscriber: SubscriptionIo? = null
+    fun addSubscriber(subscriptionIo: SubscriptionIo) {
+        subscriber = subscriptionIo
     }
 
-    override fun output(line: String) {
-        outputs.add(line.toInt())
-    }
-
-    override fun outputs(): List<String> {
-        return outputs.map { it.toString() }.toList()
+    override fun output(line: Int) {
+        if (subscriber != null) {
+            subscriber!!.queueInput(line)
+        }
+        super.output(line)
     }
 }
 
