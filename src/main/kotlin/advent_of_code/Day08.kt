@@ -26,10 +26,10 @@ object Day08 {
 
 typealias DecodedImage = String
 
-fun DecodedImage.humanReadable() = (1..Day08.image.dimensions.second).map { line ->
-    val startIndex = Day08.image.dimensions.first * (line - 1)
+fun DecodedImage.humanReadable() = (0 until Day08.image.dimensions.second).joinToString("\n") { line ->
+    val startIndex = Day08.image.dimensions.first * (line)
     substring(startIndex, startIndex + Day08.image.dimensions.first)
-}.joinToString("\n").replace('1', '#').replace('0', ' ')
+}.replace('1', '#').replace('0', ' ')
 
 data class Image(val rawData: RawData, val dimensions: Dimensions) {
     val layers
