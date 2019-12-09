@@ -1,13 +1,11 @@
 package advent_of_code
 
-import advent_of_code.domain.*
-import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import advent_of_code.domain.Code
+import advent_of_code.domain.Program
+import advent_of_code.domain.QueuedIo
+import advent_of_code.domain.load
 
-suspend fun main(args: Array<String>) {
+fun main() {
     println(Day07.partOne())
     println(Day07.partTwo())
 }
@@ -18,15 +16,14 @@ object Day07 {
         .getResource("day07_thrusters.txt")!!
         .readText()
 
-    fun partOne(): Signal = intArrayOf(0, 1, 2, 3, 4).permutations().bestSequentialOutput(amplifierControllerSoftware)
+    fun partOne(): Signal = listOf(0, 1, 2, 3, 4).permutations().bestSequentialOutput(amplifierControllerSoftware)
 
-    suspend fun partTwo(): Signal =
-        intArrayOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
+    fun partTwo(): Signal = listOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
 }
 
 typealias Signal = Long
 typealias PhaseSetting = Int
-typealias PhaseSettingSequence = IntArray
+typealias PhaseSettingSequence = List<PhaseSetting>
 
 fun PhaseSettingSequence.sequentialAmplify(inputSignal: Signal, code: Code): Signal {
     var previousOutputSignal = inputSignal
@@ -63,37 +60,6 @@ fun PhaseSettingSequence.parallelAmplify(inputSignal: Signal, code: Code): Signa
     return cluster.last().program.io.outputQueue().last()
 }
 
-suspend fun PhaseSettingSequence.parallelAmplifyCoRoutine(inputSignal: Signal, program: String): Signal {
-    var last: Int? = null
-    coroutineScope {
-        val broadcastChannel = BroadcastChannel<Int>(2)
-        val ea = broadcastChannel.openSubscription()
-        broadcastChannel.send(this@parallelAmplifyCoRoutine[0]) // Initial phase
-        broadcastChannel.send(inputSignal.toInt()) // Primary input
-
-        val (ab, bc, cd, de) = (1..4).map { i ->
-            Channel<Int>(1).also { it.send(this@parallelAmplifyCoRoutine[i]) }
-        }
-        val output = broadcastChannel.openSubscription()
-
-        launch {
-            try {
-                while (true) {
-                    last = output.receive()
-                }
-            } catch (e: ClosedReceiveChannelException) {
-                // Calculation done
-            }
-        }
-        launchComputer(program, ea, ab)
-        launchComputer(program, ab, bc)
-        launchComputer(program, bc, cd)
-        launchComputer(program, cd, de)
-        launchComputer(program, de, broadcastChannel)
-    }
-    return last!!.toLong()
-}
-
 fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
     val permutations = mutableListOf<PhaseSettingSequence>()
     forEach { i ->
@@ -105,7 +71,7 @@ fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
                             if (l != k && l != j && l != i) {
                                 forEach { m ->
                                     if (m != l && m != k && m != j && m != i) {
-                                        permutations.add(intArrayOf(i, j, k, l, m))
+                                        permutations.add(listOf(i, j, k, l, m))
                                     }
                                 }
                             }
@@ -141,7 +107,7 @@ data class Amplifier(val code: Code, val io: QueuedIo, val name: String? = null)
     }
 }
 
-class SubscriptionIo() : QueuedIo() {
+class SubscriptionIo : QueuedIo() {
     var subscriber: SubscriptionIo? = null
     fun addSubscriber(subscriptionIo: SubscriptionIo) {
         subscriber = subscriptionIo
