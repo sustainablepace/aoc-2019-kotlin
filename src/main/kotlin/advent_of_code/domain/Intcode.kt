@@ -32,7 +32,7 @@ fun Memory.write(parameter: Parameter, v: Long) = parameter.run {
 fun Long.toInstruction(): Instruction = FiveDigitOpcode(this).toInstruction()
 
 data class FiveDigitOpcode(val opcode: Long) {
-    private val paddedOpcode = opcode.toString().padStart(5, '0')
+    val paddedOpcode = opcode.toString().padStart(5, '0')
 
     private val twoDigitOpcode: Int
         get() = paddedOpcode.substring(3).toInt(10)
@@ -81,7 +81,7 @@ object RelativeMode : ParameterMode() {
     override val value: Int = 2
 }
 
-sealed class Instruction(private val fiveDigitOpcode: FiveDigitOpcode) {
+sealed class Instruction(val fiveDigitOpcode: FiveDigitOpcode) {
     protected abstract val numParams: Int
     abstract fun execute(memory: Memory, state: ProgramState, io: Io): ProgramState
 
@@ -237,17 +237,17 @@ data class Program(val memory: Memory, val io: Io = CommandLineIo, val name: Str
 
     fun isTerminated(): Boolean = memory.read(state.instructionPointer).toInstruction() is Termination
 
-    fun compute(): Program = memory.read(state.instructionPointer).toInstruction().let { instruction ->
-        if (instruction is Termination) {
-            null
-        } else {
-            try {
-                state = instruction.execute(memory, state, io)
-                this
-            } catch (e: IOException) {
-                null
+    fun compute(): Program {
+        while (memory.read(state.instructionPointer).toInstruction().let { instruction ->
+            if (instruction is Termination) false else {
+                try {
+                    state = instruction.execute(memory, state, io)
+                    true
+                } catch (e: IOException) {
+                    false
+                }
             }
-        }
-    }?.compute() ?: this
-
+        }) {}
+        return this
+    }
 }
