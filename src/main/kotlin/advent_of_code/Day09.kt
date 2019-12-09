@@ -22,5 +22,9 @@ object Day09 {
         return program.io.outputQueue().last()
     }
 
-    fun partTwo(): String = ""
+    fun partTwo(): Long {
+        val program = Program(boostSoftware.load(), QueuedIo().queueInput(2))
+        program.compute()
+        return program.io.outputQueue().last()
+    }
 }
