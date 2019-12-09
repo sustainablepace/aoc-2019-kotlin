@@ -26,9 +26,9 @@ object Day02 {
         (0..99).forEach { noun ->
             (0..99).forEach { verb ->
                 val memory = input.load()
-                memory[1] = noun
-                memory[2] = verb
-                if (Program(memory).compute().memory[0] == 19_690_720) {
+                memory[1] = noun.toLong()
+                memory[2] = verb.toLong()
+                if (Program(memory).compute().memory[0] == 19_690_720L) {
                     return 100 * noun + verb
                 }
             }

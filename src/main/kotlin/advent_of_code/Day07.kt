@@ -24,14 +24,14 @@ object Day07 {
         intArrayOf(5, 6, 7, 8, 9).permutations().bestParallelOutput(amplifierControllerSoftware)
 }
 
-typealias Signal = Int
+typealias Signal = Long
 typealias PhaseSetting = Int
 typealias PhaseSettingSequence = IntArray
 
 fun PhaseSettingSequence.sequentialAmplify(inputSignal: Signal, code: Code): Signal {
     var previousOutputSignal = inputSignal
     forEach { phaseSetting ->
-        val io = QueuedIo().queueInput(phaseSetting) as QueuedIo
+        val io = QueuedIo().queueInput(phaseSetting.toLong()) as QueuedIo
         val amplifier = Amplifier(code, io)
         previousOutputSignal = amplifier.amplify(previousOutputSignal)!!
     }
@@ -44,7 +44,7 @@ fun AmplifierCluster.isRunning(): Boolean = any { !it.isTerminated() }
 
 fun PhaseSettingSequence.parallelAmplify(inputSignal: Signal, code: Code): Signal {
     val ioList: List<SubscriptionIo> = this.map { phaseSetting ->
-        SubscriptionIo().queueInput(phaseSetting) as SubscriptionIo
+        SubscriptionIo().queueInput(phaseSetting.toLong()) as SubscriptionIo
     }
     val pairs = ioList.toMutableList().also { it.add(ioList.first()) }.zipWithNext()
     pairs.forEach { pair ->
@@ -69,7 +69,7 @@ suspend fun PhaseSettingSequence.parallelAmplifyCoRoutine(inputSignal: Signal, p
         val broadcastChannel = BroadcastChannel<Int>(2)
         val ea = broadcastChannel.openSubscription()
         broadcastChannel.send(this@parallelAmplifyCoRoutine[0]) // Initial phase
-        broadcastChannel.send(inputSignal) // Primary input
+        broadcastChannel.send(inputSignal.toInt()) // Primary input
 
         val (ab, bc, cd, de) = (1..4).map { i ->
             Channel<Int>(1).also { it.send(this@parallelAmplifyCoRoutine[i]) }
@@ -91,7 +91,7 @@ suspend fun PhaseSettingSequence.parallelAmplifyCoRoutine(inputSignal: Signal, p
         launchComputer(program, cd, de)
         launchComputer(program, de, broadcastChannel)
     }
-    return last!!
+    return last!!.toLong()
 }
 
 fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
@@ -118,10 +118,10 @@ fun PhaseSettingSequence.permutations(): List<PhaseSettingSequence> {
     return permutations
 }
 
-fun List<PhaseSettingSequence>.bestSequentialOutput(program: String): Int =
+fun List<PhaseSettingSequence>.bestSequentialOutput(program: String): Signal =
     map { it.sequentialAmplify(0, program) }.max() ?: 0
 
-fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Int =
+fun List<PhaseSettingSequence>.bestParallelOutput(program: String): Signal =
     map { it.parallelAmplify(0, program) }.max() ?: 0
 
 
@@ -147,7 +147,7 @@ class SubscriptionIo() : QueuedIo() {
         subscriber = subscriptionIo
     }
 
-    override fun output(line: Int) {
+    override fun output(line: Long) {
         if (subscriber != null) {
             subscriber!!.queueInput(line)
         }
