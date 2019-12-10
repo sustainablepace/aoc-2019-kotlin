@@ -4,33 +4,45 @@ import kotlin.math.PI
 import kotlin.test.*
 
 class Day10Test {
-    val example1 = javaClass.classLoader
-        .getResource("day10_example1.txt")!!
-        .readText()
-
-    @Test
-    fun coordinates() {
-        assertTrue(Coordinate(0,0) < Coordinate(1,1))
-        assertTrue(Coordinate(0,0) <= Coordinate(1,1))
-        assertFalse(Coordinate(0,0) > Coordinate(1,1))
-        assertFalse(Coordinate(0,0) >= Coordinate(1,1))
-        assertNotEquals(Coordinate(0,0), Coordinate(1,1))
-    }
-
-    @Test
-    fun searchRange() {
-        assertTrue(Coordinate(0,0).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-        assertTrue(Coordinate(-1,-1).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-        assertTrue(Coordinate(1,1).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-        assertTrue(Coordinate(-1,1).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-        assertTrue(Coordinate(1,-1).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-        assertFalse(Coordinate(6,6).within(SearchRange(Coordinate(-1,-1), Coordinate(1, 1))))
-
-    }
 
     @Test
     fun `part one - example 1`() {
-        assertEquals(33, asteroidMap(example1).maxNumberOfVisibleAsteroids())
+        val example1 = javaClass.classLoader
+            .getResource("day10_example1.txt")!!
+            .readText()
+
+        assertEquals(Asteroid(5,8), example1.asteroids().monitoringSite())
+        assertEquals(33, example1.asteroids().maxVisibleAsteroids())
+    }
+
+    @Test
+    fun `part one - example 2`() {
+        val example1 = javaClass.classLoader
+            .getResource("day10_example2.txt")!!
+            .readText()
+
+        assertEquals(Asteroid(1,2), example1.asteroids().monitoringSite())
+        assertEquals(35, example1.asteroids().maxVisibleAsteroids())
+    }
+
+    @Test
+    fun `part one - example 3`() {
+        val example1 = javaClass.classLoader
+            .getResource("day10_example3.txt")!!
+            .readText()
+
+        assertEquals(Asteroid(6,3), example1.asteroids().monitoringSite())
+        assertEquals(41, example1.asteroids().maxVisibleAsteroids())
+    }
+
+    @Test
+    fun `part one - example 4`() {
+        val example1 = javaClass.classLoader
+            .getResource("day10_example4.txt")!!
+            .readText()
+
+        assertEquals(Asteroid(11,13), example1.asteroids().monitoringSite())
+        assertEquals(210, example1.asteroids().maxVisibleAsteroids())
     }
 
     @Test

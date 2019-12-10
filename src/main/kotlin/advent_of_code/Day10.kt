@@ -9,87 +9,40 @@ fun main(args: Array<String>) {
 }
 
 object Day10 {
-
-    private val asteroidDiagram = javaClass.classLoader
+    private val diagram = javaClass.classLoader
         .getResource("day10_asteroids.txt")!!
         .readText()
 
-    fun partOne(): Int = asteroidMap(asteroidDiagram).maxNumberOfVisibleAsteroids()
+    fun partOne(): Int = diagram.asteroids().maxVisibleAsteroids()
 
-    fun partTwo(): Int {
-        val asteroidMap = asteroidMap(asteroidDiagram)
-        val laser = asteroidMap.asteroidWithMaxNumberOfVisibleAsteroids()!!
-        val asteroidNumber200 = asteroidMap.shootingOrder(laser)?.get(199)
-        return asteroidNumber200.x * 100 + asteroidNumber200.y
-    }
-
-}
-
-fun AsteroidMap.shootingOrder(laser: AsteroidWithLaser): List<Asteroid> {
-    val shootingOrder = mutableListOf<Asteroid>()
-    val remainingAsteroids = minus(laser).toMutableList()
-
-    val vectorList = dimensions().toRelativeSearchRange(laser).toVectorList()
-    vectorList.sortByDescending { it.angle() }
-
-    val groupedByAngle = vectorList.groupBy { it.angle() }
-
-    while (remainingAsteroids.isNotEmpty()) {
-        groupedByAngle.forEach { asteroidsWithSameAngle ->
-            asteroidsWithSameAngle.value.firstOrNull { vector ->
-                remainingAsteroids.contains(laser + vector)
-            }?.also { vector ->
-                shootingOrder.add(laser + vector)
-                remainingAsteroids.remove(laser + vector)
-            }
+    fun partTwo(): Int? = diagram.asteroids().run {
+        monitoringSite()?.shootingOrder(this)?.get(199)?.run {
+            x * 100 + y
         }
     }
-    return shootingOrder.toList()
 }
 
-fun AsteroidMap.asteroidWithMaxNumberOfVisibleAsteroids(): Asteroid? =
-    maxBy { asteroid -> asteroid.numVisibleAsteroids(this) }
-
-fun AsteroidMap.maxNumberOfVisibleAsteroids(): Int = map { asteroid -> asteroid.numVisibleAsteroids(this) }.max() ?: 0
-
-typealias X = Int
-typealias Y = Int
-
-data class Coordinate(val x: X, val y: Y) {
-    operator fun times(i: Int): Coordinate = Coordinate(x * i, y * i)
-    operator fun plus(c: Coordinate): Coordinate = Coordinate(x + c.x, y + c.y)
-    operator fun minus(c: Coordinate): Coordinate = Coordinate(x - c.x, y - c.y)
-    operator fun compareTo(c: Coordinate): Int = (this - c).run {
-        if (x < 0 || y < 0) return -1
-        else if (x > 0 || y > 0) return 1 else 0
+typealias AsteroidDiagram = String
+fun AsteroidDiagram.asteroids(): Asteroids = lines().mapIndexed { y, line ->
+    line.mapIndexed { x, character ->
+        if (character == '#') Asteroid(x, y) else null
     }
+}.flatten().filterNotNull()
 
-    fun within(s: SearchRange) = this >= s.min && this <= s.max
-
-}
-
-data class SearchRange(val min: Coordinate, val max: Coordinate) {
-    fun toRelativeSearchRange(c: Coordinate) = SearchRange(min - c, max - c)
-    fun toVectorList(): MutableList<Vector> =
-        (min.x..max.x).map { x ->
-            (min.y..max.y).map { y -> Coordinate(x, y) }
-        }.flatten().sortedBy { abs(it.x) + abs(it.y) }.toMutableList()
-
-}
+typealias Asteroids = List<Asteroid>
+fun Asteroids.maxVisibleAsteroids(): Int = monitoringSite()?.visibleAsteroids(this)?.size ?: 0
+fun Asteroids.monitoringSite(): MonitoringSite? = maxBy { it.visibleAsteroids(this).size }
+fun Asteroids.searchRange() = SearchRange(
+    Coordinate(map { it.y }.min() ?: 0, map { it.x }.min() ?: 0),
+    Coordinate(map { it.y }.max() ?: 0, map { it.x }.max() ?: 0)
+)
 
 typealias Asteroid = Coordinate
-typealias AsteroidWithLaser = Coordinate
-typealias Vector = Coordinate
-
-fun Vector.angle(): Float {
-    return atan2(x.toFloat(), y.toFloat())
-}
-
-fun Asteroid.numVisibleAsteroids(asteroidMap: AsteroidMap): Int {
-    val remainingAsteroids = asteroidMap.minus(this).toMutableList()
-    val vectorList = asteroidMap.dimensions().toRelativeSearchRange(this).toVectorList()
-    while (vectorList.isNotEmpty()) {
-        val vector = vectorList.removeAt(0)
+fun Asteroid.visibleAsteroids(asteroids: Asteroids): Asteroids {
+    val remainingAsteroids = asteroids.minus(this).toMutableList()
+    val vectors = asteroids.searchRange().relativeTo(this).vectors()
+    while (vectors.isNotEmpty()) {
+        val vector = vectors.removeAt(0)
         var scale = 1
         var asteroidFound = false
         var scaledVector = vector * scale
@@ -99,24 +52,54 @@ fun Asteroid.numVisibleAsteroids(asteroidMap: AsteroidMap): Int {
             } else {
                 remainingAsteroids.remove(this + scaledVector)
             }
-            vectorList.remove(scaledVector)
+            vectors.remove(scaledVector)
             scaledVector = vector * (++scale)
-        } while (vectorList.contains(scaledVector))
-
+        } while (vectors.contains(scaledVector))
     }
-    return remainingAsteroids.size
+    return remainingAsteroids.toList()
 }
-typealias AsteroidMap = List<Asteroid>
 
-fun AsteroidMap.dimensions() = SearchRange(
-    Coordinate(map { it.y }.min() ?: 0, map { it.x }.min() ?: 0),
-    Coordinate(map { it.y }.max() ?: 0, map { it.x }.max() ?: 0)
-)
+typealias Vector = Coordinate
+fun Vector.angle(): Float = atan2(x.toFloat(), y.toFloat())
+operator fun Vector.times(i: Int): Vector = Vector(x * i, y * i)
 
-fun asteroidMap(asteroidDiagram: String): AsteroidMap = asteroidDiagram.lines().mapIndexed { y, line ->
-    line.mapIndexed { x, character ->
-        if (character == '#') {
-            Coordinate(x, y) as Asteroid
-        } else null
+data class SearchRange(val min: Coordinate, val max: Coordinate) {
+    fun relativeTo(c: Coordinate): RelativeSearchRange = SearchRange(min - c, max - c)
+}
+
+typealias RelativeSearchRange = SearchRange
+fun RelativeSearchRange.vectors(): MutableList<Vector> =
+    (min.x..max.x).map { x ->
+        (min.y..max.y).map { y -> Coordinate(x, y) }
+    }.flatten().sortedBy { abs(it.x) + abs(it.y) }.toMutableList()
+
+typealias MonitoringSite = Asteroid
+fun MonitoringSite.shootingOrder(asteroids: Asteroids): List<Asteroid> {
+    val shootingOrder = mutableListOf<Asteroid>()
+    val remainingAsteroids = asteroids.minus(this).toMutableList()
+
+    val vectors = asteroids.searchRange().relativeTo(this).vectors()
+    vectors.sortByDescending { it.angle() }
+
+    val groupedByAngle = vectors.groupBy { it.angle() }
+
+    while (remainingAsteroids.isNotEmpty()) {
+        groupedByAngle.forEach { alignedAsteroids ->
+            alignedAsteroids.value.firstOrNull { vector ->
+                remainingAsteroids.contains(this + vector)
+            }?.also { vector ->
+                shootingOrder.add(this + vector)
+                remainingAsteroids.remove(this + vector)
+            }
+        }
     }
-}.flatten().filterNotNull()
+    return shootingOrder.toList()
+}
+
+data class Coordinate(val x: X, val y: Y) {
+    operator fun plus(c: Coordinate): Coordinate = Coordinate(x + c.x, y + c.y)
+    operator fun minus(c: Coordinate): Coordinate = Coordinate(x - c.x, y - c.y)
+}
+
+typealias X = Int
+typealias Y = Int
