@@ -22,37 +22,29 @@ object Day11 {
 
     fun partOne(): Int {
 
-        return Robot(emergencyHullPaintingRobotCode).compute(BLACK).distinctBy { it.coordinate }.size
+        return Robot(emergencyHullPaintingRobotCode).paint(Panel(Position(0,0),BLACK)).distinctBy { it.coordinate }.size
     }
 
-    fun partTwo(): Panels = Robot(emergencyHullPaintingRobotCode).compute(WHITE).filter { it.color == WHITE }
+    fun partTwo(): Panels = Robot(emergencyHullPaintingRobotCode).paint(Panel(Position(0,0),WHITE)).filter { it.color == WHITE }
 }
 
-class Robot(code: Code) {
-    private var position = Position(0, 0)
-    private var orientation = NORTH
-    private var panels = mutableListOf<Panel>()
+class Robot(private val code: Code, private var orientation: Orientation? = NORTH) {
 
-    private val io = QueuedIo()
+    fun paint(startPanel: Panel): Panels {
+        var position = startPanel.coordinate
 
-    private val program = Program(code.load(), io)
-
-    fun compute(firstInput: Color): Panels {
-        io.queueInput(firstInput.ordinal.toLong())
+        val paintedPanels = mutableListOf<Panel>()
+        val io = QueuedIo().queueInput(startPanel.color.toLong())
+        val program = Program(code.load(), io)
         while (!program.isTerminated()) {
             program.compute()
-            if (io.outputQueue().size < 2) {
-                break
-            }
-            val outputSize = io.outputQueue().size
-            val paint = Color.from(io.outputQueue()[outputSize - 2])
-            panels.add(Panel(position, paint))
-            val turn = Turn.from(io.outputQueue()[outputSize - 1])
-            orientation = orientation.turn(turn)
-            position += orientation.getVector()
-            io.queueInput(panels.color(position).ordinal.toLong())
+            val (paint, turn) = io.outputQueue().takeLast(2)
+            paintedPanels.add(Panel(position, Color.from(paint)))
+            orientation = orientation!!.turn(Turn.from(turn))
+            position += orientation!!.getVector()
+            io.queueInput(paintedPanels.color(position).toLong())
         }
-        return panels
+        return paintedPanels.toList()
     }
 }
 
@@ -63,9 +55,9 @@ enum class Orientation {
 
     fun getVector(): Vector {
         return when (this) {
-            NORTH -> Vector(0, 1)
+            NORTH -> Vector(0, -1)
             EAST -> Vector(1, 0)
-            SOUTH -> Vector(0, -1)
+            SOUTH -> Vector(0, 1)
             WEST -> Vector(-1, 0)
         }
     }
@@ -95,16 +87,20 @@ enum class Orientation {
 enum class Color {
     BLACK, WHITE;
 
+    fun toLong() = this.ordinal.toLong()
+
     companion object {
-        fun from(value: Long) = if (value == WHITE.ordinal.toLong()) WHITE else BLACK
+        fun from(value: Long) = if (value == WHITE.toLong()) WHITE else BLACK
     }
 }
 
 enum class Turn {
     LEFT, RIGHT;
 
+    fun toLong() = this.ordinal.toLong()
+
     companion object {
-        fun from(value: Long) = if (value == LEFT.ordinal.toLong()) LEFT else RIGHT
+        fun from(value: Long) = if (value == LEFT.toLong()) LEFT else RIGHT
     }
 }
 
