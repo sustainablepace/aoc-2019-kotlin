@@ -20,8 +20,26 @@ object Day12 {
         return moons.totalEnergy()
     }
 
-    fun partTwo(): Int = 0
+    fun partTwo(): Any {
+        var xPeriod = 0L
+        var yPeriod = 0L
+        var zPeriod = 0L
+        var counter = 0L
+        val moons = jupiterMoons.load()
+        var step = jupiterMoons.load()
+        while (listOf(xPeriod, yPeriod, zPeriod).any { it == 0L }) {
+            step = step.step()
+            counter++
+            if (xPeriod == 0L && step.check(Vector3::x, moons)) xPeriod = counter
+            if (yPeriod == 0L && step.check(Vector3::y, moons)) yPeriod = counter
+            if (zPeriod == 0L && step.check(Vector3::z, moons)) zPeriod = counter
+        }
+        return lcm(xPeriod, lcm(yPeriod, zPeriod))
+
+    }
 }
+fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
+fun lcm(a: Long, b: Long): Long = a / gcd(a, b) * b
 
 typealias MoonsInput = String
 fun MoonsInput.load() = lines().map { it
@@ -48,6 +66,23 @@ data class Moon(val pos: Pos, val velocity: Velocity) {
         val velocityAfterGravity = velocity + v
         return Moon(pos + velocityAfterGravity, velocityAfterGravity)
     }
+
+    fun gravitate(other: Moon): Moon = copy(
+        velocity = velocity.copy(
+            x = gravitateAxis(other, Vector3::x),
+            y = gravitateAxis(other, Vector3::y),
+            z = gravitateAxis(other, Vector3::z)
+        )
+    )
+
+    fun applyVelocity(): Moon = copy(pos = pos + velocity)
+
+    private inline fun gravitateAxis(other: Moon, axis: Vector3.() -> Int): Int = when {
+        pos.axis() > other.pos.axis() -> velocity.axis() - 1
+        pos.axis() < other.pos.axis() -> velocity.axis() + 1
+        else -> velocity.axis()
+    }
+
 
     fun totalEnergy(): Energy = potentialEnergy() * kineticEnergy()
 
@@ -93,3 +128,20 @@ fun AxisVelocityPair.gravity(): AxisVelocity = when {
 }
 
 fun Vector3.energy() = abs(x) + abs(y) + abs(z)
+
+
+
+private fun List<Moon>.step(): List<Moon> = mapIndexed { index, moon ->
+    indices.filterNot { it == index }
+        .map { get(it) }
+        .fold(moon) { current, other -> current.gravitate(other) }
+        .applyVelocity()
+}
+
+private inline fun List<Moon>.check(axis: Vector3.() -> Int, moons:Moons): Boolean =
+    indices.all { idx -> matches(idx, axis, moons) }
+
+private inline fun List<Moon>.matches(index: Int, axis: Vector3.() -> Int, moons:Moons): Boolean =
+    this[index].pos.axis() == moons[index].pos.axis() &&
+            this[index].velocity.axis() == moons[index].velocity.axis()
+
