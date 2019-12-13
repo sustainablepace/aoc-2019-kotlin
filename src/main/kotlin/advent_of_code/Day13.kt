@@ -12,83 +12,105 @@ fun main(args: Array<String>) {
 }
 
 object Day13 {
-    private val gameCode = javaClass.classLoader
+    fun partOne(): Int = Breakout.getNumberOfBlocks()
+    fun partTwo(): Long = Breakout.insertQuarter().play()
+}
+
+object Breakout {
+    private val code = javaClass.classLoader
         .getResource("day13_game.txt")!!
         .readText()
 
-    fun partOne(): Int =
-        Program(gameCode.load(), QueuedIo()).compute().io.outputQueue().chunked(3).count { it[2] == 2L }
+    private var program = Program(code.load(), BreakoutIo)
+    private var tiles: Tiles = mutableMapOf()
+    private var score = 0L
 
-    fun partTwo(): Long {
-        val memory = gameCode.load()
-        memory[0] = 2 // Insert quarter
+    init {
+        program.compute().also { updateScoreAndTiles() }
+    }
 
-        val program = Program(memory, QueuedIo())
+    fun getNumberOfBlocks(): Int {
+        return tiles.filter { it.value is Block }.size
+    }
 
-        var outputCounter = 0
+    fun insertQuarter(): Breakout {
+        program = Program(code.load().also { it[0] = 2 }, BreakoutIo)
+        tiles = mutableMapOf()
+        score = 0L
+        return this
+    }
 
-        val breakout = Game(0L, mutableMapOf())
+    private object BreakoutIo : QueuedIo() {
+        override fun outputQueue(): List<Long> = outputQueue.toList().also { outputQueue.clear() }
+    }
 
-        while (!program.isTerminated()) {
-            program.compute()
-            val size = program.io.outputQueue().size
-            val changedTiles = program.io.outputQueue().subList(outputCounter, size).chunked(3).map { (x, y, tileId) ->
-                val tile = tile(x, y, tileId)
-                if (tile is SCORE) {
-                    breakout.score = tileId
-                } else {
-                    breakout.tiles[Position(x.toInt(), y.toInt())] = tile
-                }
+    private fun updateScoreAndTiles() = program.io.outputQueue().chunked(3).map { (x, y, tileId) ->
+        tile(x, y, tileId).also { tile ->
+            if (tile is Score) {
+                score = tileId
+            } else {
+                tiles[Position(x.toInt(), y.toInt())] = tile
+            }
+        }
+    }
+
+    fun play(withGraphics: Boolean = false): BreakoutScore = program.run {
+        if (isTerminated()) {
+            println("Insert quarter...")
+            return score
+        }
+        while (!isTerminated()) {
+            compute().also { updateScoreAndTiles() }
+
+            if (withGraphics) {
+                println(score)
+                println(graphics())
             }
 
-            //println(breakout.score)
-            //println(breakout.graphics())
-
-            val ball = breakout.tiles.filter { it.value is BALL }.keys.first()
-            val paddle = breakout.tiles.filter { it.value is PADDLE }.keys.first()
-
-            program.io.queueInput((ball.x - paddle.x).sign.toLong())
-            outputCounter = size
+            io.queueInput(
+                (tiles.find(Ball).x - tiles.find(Paddle).x).sign
+            )
         }
-        return breakout.score
+        return score
     }
-}
 
-data class Game(var score: Score, var tiles: MutableMap<Position, Tile>)
-
-typealias Score = Long
-
-fun tile(x: Long, y: Long, tileId: Long): Tile = if (x == -1L) {
-    SCORE
-} else when (tileId) {
-    0L -> EMPTY
-    1L -> WALL
-    2L -> BLOCK
-    3L -> PADDLE
-    4L -> BALL
-    else -> throw IOException("Unknown tile")
+    private fun graphics(): String = tiles.keys.groupBy { it.y }.map { line ->
+        val maxX = line.value.map { it.x }.max()!!
+        (0..maxX).joinToString("") {
+            when (tiles[line.value.getOrNull(it)]) {
+                Score -> " "
+                Empty -> " "
+                Wall -> "|"
+                Block -> "#"
+                Paddle -> "="
+                Ball -> "*"
+                null -> " "
+            }
+        }
+    }.toList().joinToString("\n")
 }
 
 sealed class Tile
-object SCORE : Tile()
-object EMPTY : Tile()
-object WALL : Tile()
-object BLOCK : Tile()
-object PADDLE : Tile()
-object BALL : Tile()
+object Score : Tile()
+object Empty : Tile()
+object Wall : Tile()
+object Block : Tile()
+object Paddle : Tile()
+object Ball : Tile()
 
+fun tile(x: Long, y: Long, tileId: Long): Tile = if (x == -1L) {
+    Score
+} else when (tileId) {
+    0L -> Empty
+    1L -> Wall
+    2L -> Block
+    3L -> Paddle
+    4L -> Ball
+    else -> throw IOException("Unknown tile")
+}
 
-fun Game.graphics(): String = tiles.keys.groupBy { it.y }.map { line ->
-    val maxX = line.value.map { it.x }.max()!!
-    (0..maxX).joinToString("") {
-        when (tiles[line.value.getOrNull(it)]) {
-            SCORE -> " "
-            EMPTY -> " "
-            WALL -> "|"
-            BLOCK -> "#"
-            PADDLE -> "="
-            BALL -> "*"
-            null -> " "
-        }
-    }
-}.toList().joinToString("\n")
+typealias Tiles = MutableMap<Position, Tile>
+
+fun Tiles.find(tile: Tile) = filter { it.value == tile }.keys.first()
+
+typealias BreakoutScore = Long

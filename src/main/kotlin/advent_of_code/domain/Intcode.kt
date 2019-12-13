@@ -193,6 +193,7 @@ typealias RelativeBase = Address
 
 interface Io {
     fun queueInput(line: Long): Io
+    fun queueInput(line: Int): Io
     fun input(): Long?
     fun output(line: Long)
     fun outputQueue(): List<Long>
@@ -200,6 +201,7 @@ interface Io {
 
 object CommandLineIo : Io {
     override fun queueInput(line: Long): Io = this
+    override fun queueInput(line: Int): Io = this
     override fun input(): Long? = readLine()?.toLong()
     override fun output(line: Long) = println(line)
     override fun outputQueue(): List<Long> = listOf()
@@ -207,9 +209,13 @@ object CommandLineIo : Io {
 
 open class QueuedIo : Io {
     private val inputQueue = mutableListOf<Long>()
-    private val outputQueue = mutableListOf<Long>()
+    protected val outputQueue = mutableListOf<Long>()
     override fun queueInput(line: Long): Io {
         inputQueue.add(line)
+        return this
+    }
+    override fun queueInput(line: Int): Io {
+        inputQueue.add(line.toLong())
         return this
     }
 
