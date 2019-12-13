@@ -15,7 +15,7 @@ object Day08 {
     val image = Image(rawImage, 25 to 6)
 
     fun partOne(): Int {
-        val layerWithFewestZero = image.layers.minBy { it.count { it == BLACK.ordinal } }
+        val layerWithFewestZero = image.layers.minBy { layer -> layer.count { it == BLACK.ordinal } }
         val numOnes = layerWithFewestZero?.count { it == WHITE.ordinal }
         val numTwos = layerWithFewestZero?.count { it == TRANSPARENT.ordinal }
         return numOnes!! * numTwos!!
@@ -35,7 +35,7 @@ data class Image(val rawData: RawData, val dimensions: Dimensions) {
     val layers
         get() = rawData.mapIndexed { index, c ->
             index / (dimensions.first * dimensions.second) to c
-        }.groupBy { it.first }.values.map { it.map { it.second.toString().toInt() } }
+        }.groupBy { it.first }.values.map { list -> list.map { it.second.toString().toInt() } }
 
     private val visibleLayer
         get() = (0 until dimensions.size()).map { index ->

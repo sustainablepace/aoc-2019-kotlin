@@ -108,7 +108,7 @@ data class Amplifier(val code: Code, val io: QueuedIo, val name: String? = null)
 }
 
 class SubscriptionIo : QueuedIo() {
-    var subscriber: SubscriptionIo? = null
+    private var subscriber: SubscriptionIo? = null
     fun addSubscriber(subscriptionIo: SubscriptionIo) {
         subscriber = subscriptionIo
     }

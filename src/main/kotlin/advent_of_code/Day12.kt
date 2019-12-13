@@ -52,8 +52,8 @@ fun gcd(a: Long, b: Long, vararg numbers: Long): Long = when {
 
 typealias MoonsInput = String
 
-fun MoonsInput.load() = lines().map {
-    it
+fun MoonsInput.load() = lines().map { line ->
+    line
         .replace("<", "")
         .replace(">", "")
         .replace("x=", "")

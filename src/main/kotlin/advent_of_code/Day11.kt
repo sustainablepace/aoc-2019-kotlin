@@ -113,9 +113,9 @@ fun Panels.color(position: Position): Color {
 }
 
 fun Panels.humanReadable(): String {
-    val groups = groupBy { it.coordinate.y }.map { it.value.map { it.coordinate.x } }
+    val groups = groupBy { it.coordinate.y }.map { mapEntry -> mapEntry.value.map { it.coordinate.x } }
     val lines = groups.map { line ->
-        (0..line.max()!!).map { if (line.contains(it)) "#" else " " }.joinToString("")
+        (0..line.max()!!).joinToString("") { if (line.contains(it)) "#" else " " }
     }
     return lines.toList().joinToString("\n")
 }

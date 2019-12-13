@@ -7,7 +7,7 @@ fun main(args: Array<String>) {
 
 object Day06 {
 
-    val input = javaClass.classLoader
+    private val input = javaClass.classLoader
         .getResource("day06_orbit_data.txt")!!
         .readText()
 
@@ -20,7 +20,7 @@ object Day06 {
     }
 }
 
-class OrbitData(val input: String) {
+class OrbitData(input: String) {
 
     val numOrbits: Int
         get() = next(1, "COM")
@@ -34,15 +34,14 @@ class OrbitData(val input: String) {
         return newNum
     }
 
-    fun getChildren(parent: String) = orbitList.filter { it.first == parent }.map { it.second }
+    private fun getChildren(parent: String) = orbitList.filter { it.first == parent }.map { it.second }
 
     fun numTransfersBetween(from: String, to: String): Int {
         val parentsFrom = parentsOf(from)
         val parentsTo = parentsOf(to)
-        val distance = parentsFrom.toSet().intersect(parentsTo.toSet()).map {
+        return parentsFrom.toSet().intersect(parentsTo.toSet()).map {
             parentsFrom.indexOf(it) + parentsTo.indexOf(it)
         }.min()!!
-        return distance
     }
 
     fun parentsOf(from: String): Array<out String> {
@@ -55,7 +54,7 @@ class OrbitData(val input: String) {
         return mutableListOf(parent, *itsParents).toTypedArray()
     }
 
-    val orbitList = input.lines().map {
+    private val orbitList = input.lines().map {
         val l = it.split(")")
         l[0] to l[1]
     }.toList()

@@ -46,7 +46,7 @@ fun cable(line: String): Cable = line.split(",")
 
 fun cable(segments: List<CableSegment>): Cable {
     var point: Port = 0 to 0
-    val cable = mutableListOf<Point>(point)
+    val cable = mutableListOf(point)
     segments.forEach { segment ->
         val step: Point = when (segment.direction) {
             RIGHT -> (1 to 0)

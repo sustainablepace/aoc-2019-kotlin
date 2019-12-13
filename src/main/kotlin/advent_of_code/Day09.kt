@@ -1,6 +1,5 @@
 package advent_of_code
 
-import advent_of_code.Pixel.*
 import advent_of_code.domain.Program
 import advent_of_code.domain.QueuedIo
 import advent_of_code.domain.load

@@ -244,6 +244,7 @@ data class Program(val memory: Memory, val io: Io = CommandLineIo, val name: Str
     fun isTerminated(): Boolean = memory.read(state.instructionPointer).toInstruction() is Termination
 
     fun compute(): Program {
+        @Suppress("ControlFlowWithEmptyBody")
         while (isNotHalted()) {}
         return this
     }
