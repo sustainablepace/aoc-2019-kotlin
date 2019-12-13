@@ -6,7 +6,7 @@ import advent_of_code.domain.load
 import java.io.IOException
 import kotlin.math.sign
 
-suspend fun main(args: Array<String>) {
+fun main(args: Array<String>) {
     println(Day13.partOne())
     println(Day13.partTwo())
 }
@@ -32,7 +32,7 @@ object Day13 {
         while (!program.isTerminated()) {
             program.compute()
             val size = program.io.outputQueue().size
-            program.io.outputQueue().subList(outputCounter, size).chunked(3).map { (x, y, tileId) ->
+            val changedTiles = program.io.outputQueue().subList(outputCounter, size).chunked(3).map { (x, y, tileId) ->
                 val tile = tile(x, y, tileId)
                 if (tile is SCORE) {
                     breakout.score = tileId
@@ -40,6 +40,10 @@ object Day13 {
                     breakout.tiles[Position(x.toInt(), y.toInt())] = tile
                 }
             }
+
+            //println(breakout.score)
+            //println(breakout.graphics())
+
             val ball = breakout.tiles.filter { it.value is BALL }.keys.first()
             val paddle = breakout.tiles.filter { it.value is PADDLE }.keys.first()
 
@@ -50,13 +54,7 @@ object Day13 {
     }
 }
 
-data class Game(var score: Score, var tiles: MutableMap<Position, Tile>) {
-    fun paint(): String = tiles.keys.groupBy { it.y }.map { line ->
-        val maxX = line.value.map { it.x }.max()!!
-        (0..maxX).joinToString("") { tiles[line.value.getOrNull(it)]?.character.toString() }
-    }.toList().joinToString("\n")
-}
-
+data class Game(var score: Score, var tiles: MutableMap<Position, Tile>)
 
 typealias Score = Long
 
@@ -71,30 +69,26 @@ fun tile(x: Long, y: Long, tileId: Long): Tile = if (x == -1L) {
     else -> throw IOException("Unknown tile")
 }
 
-sealed class Tile {
-    abstract val character: Char
-}
+sealed class Tile
+object SCORE : Tile()
+object EMPTY : Tile()
+object WALL : Tile()
+object BLOCK : Tile()
+object PADDLE : Tile()
+object BALL : Tile()
 
-object SCORE : Tile() {
-    override val character: Char = ' '
-}
 
-object EMPTY : Tile() {
-    override val character: Char = ' '
-}
-
-object WALL : Tile() {
-    override val character: Char = '|'
-}
-
-object BLOCK : Tile() {
-    override val character: Char = '#'
-}
-
-object PADDLE : Tile() {
-    override val character: Char = '='
-}
-
-object BALL : Tile() {
-    override val character: Char = '*'
-}
+fun Game.graphics(): String = tiles.keys.groupBy { it.y }.map { line ->
+    val maxX = line.value.map { it.x }.max()!!
+    (0..maxX).joinToString("") {
+        when (tiles[line.value.getOrNull(it)]) {
+            SCORE -> " "
+            EMPTY -> " "
+            WALL -> "|"
+            BLOCK -> "#"
+            PADDLE -> "="
+            BALL -> "*"
+            null -> " "
+        }
+    }
+}.toList().joinToString("\n")
