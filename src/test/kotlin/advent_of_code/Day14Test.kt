@@ -2,6 +2,7 @@ package advent_of_code
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class Day14Test {
 
@@ -61,12 +62,28 @@ class Day14Test {
     }
 
     @Test
+    fun `part two - example 2`() {
+        val part1example1 = javaClass.classLoader
+            .getResource("day14_part1_example3.txt")!!
+            .readText()
+
+        val reactions = part1example1.parse()
+        assertTrue(reactions.minOreForFuel(6323777403) <= 1_000_000_000_000)
+        assertTrue(reactions.minOreForFuel(6323777403 + 1) > 1_000_000_000_000)
+
+        assertEquals(6323777403, reactions.maxFuelForOre(1_000_000_000_000))
+    }
+
+    @Test
     fun `part two - example 3`() {
         val part1example1 = javaClass.classLoader
             .getResource("day14_part1_example3.txt")!!
             .readText()
 
         val reactions = part1example1.parse()
+        assertTrue(reactions.minOreForFuel(82892753) <= 1_000_000_000_000)
+        assertTrue(reactions.minOreForFuel(82892753 + 1) > 1_000_000_000_000)
+
         assertEquals(82892753, reactions.maxFuelForOre(1_000_000_000_000))
     }
 
@@ -77,6 +94,9 @@ class Day14Test {
             .readText()
 
         val reactions = part1example1.parse()
+        assertTrue(reactions.minOreForFuel(5586022) <= 1_000_000_000_000)
+        assertTrue(reactions.minOreForFuel(5586022 + 1) > 1_000_000_000_000)
+
         assertEquals(5586022, reactions.maxFuelForOre(1_000_000_000_000))
     }
 
@@ -87,11 +107,14 @@ class Day14Test {
             .readText()
 
         val reactions = part1example1.parse()
+        assertTrue(reactions.minOreForFuel(460664) <= 1_000_000_000_000)
+        assertTrue(reactions.minOreForFuel(460664 + 1) > 1_000_000_000_000)
+
         assertEquals(460664, reactions.maxFuelForOre(1_000_000_000_000))
     }
 
     @Test
     fun `part two`() {
-        assertEquals(0, Day14.partTwo())
+        //assertEquals(0, Day14.partTwo())
     }
 }

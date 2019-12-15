@@ -58,8 +58,45 @@ fun Ingredients.substitute(reactions: Reactions) = flatMap { ingredient ->
     }
 }
 
-fun Reactions.maxFuelForOre(numFuel: Amount): Amount {
-    return 0
+typealias FuelInterval = Pair<Amount, Amount>
+fun Reactions.searchIntervalMaxFuelForOre(numOre: Amount): FuelInterval {
+    var fuel = 1L
+    var ore = minOreForFuel(fuel)
+    println("$fuel fuel requires $ore ore")
+
+    while(ore < numOre) {
+        fuel *= 2
+        ore = minOreForFuel(fuel)
+        println("$fuel fuel requires $ore ore")
+    }
+    return fuel/2 to fuel
+}
+fun Reactions.maxFuelForOre(numOre: Amount): Amount {
+    var interval = searchIntervalMaxFuelForOre(numOre)
+    var abort = false
+    var previousOre = 0L
+    var maxFuel: Long
+    do {
+        println("Interval $interval")
+
+        maxFuel = (interval.first + interval.second)/2.toLong()
+        val newOre = minOreForFuel(maxFuel)
+        println("$maxFuel fuel requires $newOre ore")
+        if(newOre == numOre) {
+            abort = true
+        } else {
+            interval = if(newOre > numOre) {
+                interval.first to maxFuel
+            } else {
+                maxFuel to interval.second
+            }
+            if(newOre == previousOre) {
+                abort = true
+            }
+            previousOre = newOre
+        }
+    } while (!abort)
+    return maxFuel
 }
 
 fun Reactions.minOreForFuel(numFuel: Amount): Amount {
@@ -98,3 +135,4 @@ fun ReactionsList.parse(): Reactions = lines().map { line ->
     }
     Reaction(left, right)
 }.toSet()
+
