@@ -1,5 +1,6 @@
 package advent_of_code
 
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -61,6 +62,7 @@ class Day14Test {
         assertEquals(168046, Day14.partOne())
     }
 
+    @Ignore
     @Test
     fun `part two - example 2`() {
         val part1example1 = javaClass.classLoader
@@ -75,6 +77,7 @@ class Day14Test {
     }
 
     @Test
+    @Ignore
     fun `part two - example 3`() {
         val part1example1 = javaClass.classLoader
             .getResource("day14_part1_example3.txt")!!
@@ -88,6 +91,7 @@ class Day14Test {
     }
 
     @Test
+    @Ignore
     fun `part two - example 4`() {
         val part1example1 = javaClass.classLoader
             .getResource("day14_part1_example4.txt")!!
@@ -101,6 +105,7 @@ class Day14Test {
     }
 
     @Test
+    @Ignore
     fun `part two - example 5`() {
         val part1example1 = javaClass.classLoader
             .getResource("day14_part1_example5.txt")!!
@@ -114,7 +119,8 @@ class Day14Test {
     }
 
     @Test
+    @Ignore
     fun `part two`() {
-        //assertEquals(0, Day14.partTwo())
+        assertEquals(0, Day14.partTwo())
     }
 }
