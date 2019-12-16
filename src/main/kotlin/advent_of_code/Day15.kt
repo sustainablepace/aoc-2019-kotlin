@@ -24,7 +24,7 @@ object Day15 {
         val explorationResult = ExplorationResult( Position(0, 0), MOVED, listOf())
         val maze = mutableListOf(explorationResult)
 
-        var droids = spawnRobots(explorationResult, maze)
+        var droids = spawnDroids(explorationResult, maze)
 
         while (droids.isNotEmpty()) {
             droids = droids.flatMap { droid ->
@@ -35,14 +35,14 @@ object Day15 {
                         return result.instructions.size
                     }
                     WALL -> listOf()
-                    MOVED -> spawnRobots(result, maze)
+                    MOVED -> spawnDroids(result, maze)
                 }
             }
         }
         throw IOException("Droid lost in maze.")
     }
 
-    private fun spawnRobots(result: ExplorationResult, maze: Maze): List<Droid> {
+    private fun spawnDroids(result: ExplorationResult, maze: Maze): List<Droid> {
         val options = options(result.position, maze)
         return options.map { direction ->
             Droid(code, result, direction)
