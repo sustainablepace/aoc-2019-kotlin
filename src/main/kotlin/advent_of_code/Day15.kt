@@ -19,44 +19,32 @@ object Day15 {
         .getResource("day15_program.txt")!!
         .readText()
 
-
     fun partOne(): Int {
-        val explorationResult = ExplorationResult( Position(0, 0), MOVED, listOf())
+        val explorationResult = findOxygen(code)
+        return explorationResult.instructions.size
+    }
+
+    fun partTwo(): Int {
+        val oxygen = findOxygen(code)
+        val explorationResult = ExplorationResult( oxygen.position, MOVED, oxygen.instructions)
         val maze = mutableListOf(explorationResult)
 
-        var droids = spawnDroids(explorationResult, maze)
-
+        var droids = spawnDroids(code, explorationResult, maze)
+        var steps = 0
         while (droids.isNotEmpty()) {
             droids = droids.flatMap { droid ->
                 val result = droid.explore()
                 maze.add(result)
                 when (result.droidResponse) {
-                    OXYGEN -> {
-                        return result.instructions.size
-                    }
+                    OXYGEN -> listOf()
                     WALL -> listOf()
-                    MOVED -> spawnDroids(result, maze)
+                    MOVED -> spawnDroids(code, result, maze)
                 }
             }
+            steps++
         }
-        throw IOException("Droid lost in maze.")
+        return steps
     }
-
-    private fun spawnDroids(result: ExplorationResult, maze: Maze): List<Droid> {
-        val options = options(result.position, maze)
-        return options.map { direction ->
-            Droid(code, result, direction)
-        }
-    }
-
-
-    private fun options(currentPosition: Position, maze: Maze): List<CompassDirection> {
-        return compassDirections.map { direction ->
-            if (maze.get(currentPosition, direction) == null) direction else null
-        }.filterNotNull()
-    }
-
-    fun partTwo(): Long = 0L
 }
 
 data class Droid(val code: Code, val explorationResult: ExplorationResult, val direction: CompassDirection) {
@@ -72,7 +60,6 @@ data class Droid(val code: Code, val explorationResult: ExplorationResult, val d
             else -> throw IOException("Invalid droid response.")
         }
         return ExplorationResult(explorationResult.position + direction, droidResponse, program.io.inputQueue())
-
     }
 }
 
@@ -104,6 +91,42 @@ enum class CompassDirection(val input: Int) {
 
     }
 
+}
+fun findOxygen(code: Code) : ExplorationResult {
+    val explorationResult = ExplorationResult( Position(0, 0), MOVED, listOf())
+    val maze = mutableListOf(explorationResult)
+
+    var droids = spawnDroids(code, explorationResult, maze)
+
+    while (droids.isNotEmpty()) {
+        droids = droids.flatMap { droid ->
+            val result = droid.explore()
+            maze.add(result)
+            when (result.droidResponse) {
+                OXYGEN -> {
+                    return result
+                }
+                WALL -> listOf()
+                MOVED -> spawnDroids(code, result, maze)
+            }
+        }
+    }
+    throw IOException("Droid lost in maze.")
+
+}
+
+private fun spawnDroids(code: Code, result: ExplorationResult, maze: Maze): List<Droid> {
+    val options = options(result.position, maze)
+    return options.map { direction ->
+        Droid(code, result, direction)
+    }
+}
+
+
+private fun options(currentPosition: Position, maze: Maze): List<CompassDirection> {
+    return compassDirections.map { direction ->
+        if (maze.get(currentPosition, direction) == null) direction else null
+    }.filterNotNull()
 }
 
 infix operator fun Position.plus(compassDirection: CompassDirection): Position = when (compassDirection) {
