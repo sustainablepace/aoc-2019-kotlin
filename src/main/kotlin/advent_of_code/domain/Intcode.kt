@@ -197,6 +197,7 @@ interface Io {
     fun input(): Long?
     fun output(line: Long)
     fun outputQueue(): List<Long>
+    fun inputQueue(): List<Long>
 }
 
 object CommandLineIo : Io {
@@ -205,17 +206,21 @@ object CommandLineIo : Io {
     override fun input(): Long? = readLine()?.toLong()
     override fun output(line: Long) = println(line)
     override fun outputQueue(): List<Long> = listOf()
+    override fun inputQueue(): List<Long> = listOf()
 }
 
 open class QueuedIo : Io {
-    private val inputQueue = mutableListOf<Long>()
+    protected val inputs = mutableListOf<Long>()
+    protected val inputQueue = mutableListOf<Long>()
     protected val outputQueue = mutableListOf<Long>()
     override fun queueInput(line: Long): Io {
         inputQueue.add(line)
+        inputs.add(line)
         return this
     }
     override fun queueInput(line: Int): Io {
         inputQueue.add(line.toLong())
+        inputs.add(line.toLong())
         return this
     }
 
@@ -227,6 +232,10 @@ open class QueuedIo : Io {
 
     override fun output(line: Long) {
         outputQueue.add(line)
+    }
+
+    override fun inputQueue(): List<Long> {
+        return inputs
     }
 
     override fun outputQueue(): List<Long> {
