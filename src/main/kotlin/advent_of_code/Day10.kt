@@ -99,6 +99,7 @@ fun MonitoringSite.shootingOrder(asteroids: Asteroids): List<Asteroid> {
 data class Coordinate(val x: X, val y: Y) {
     operator fun plus(c: Coordinate): Coordinate = Coordinate(x + c.x, y + c.y)
     operator fun minus(c: Coordinate): Coordinate = Coordinate(x - c.x, y - c.y)
+    infix fun isNeighbour(c: Coordinate): Boolean = abs(x - c.x) + abs(y - c.y) == 1
 }
 
 typealias X = Int
